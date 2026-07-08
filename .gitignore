@@ -39,3 +39,18 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+/lib/generated/prisma
+
+# database
+/prisma/dev.db
+/prisma/dev.db-journal
+/dev.db
+/dev.db-journal
+
+# uploaded product photos
+/public/uploads/*
+!/public/uploads/.gitkeep
+
+# local agent tooling (dev server launch config, not part of the app)
+/.claude/

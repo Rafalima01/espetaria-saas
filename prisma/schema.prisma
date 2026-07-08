@@ -1,0 +1,415 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  CASHIER
+  WAITER
+}
+
+enum StockMovementType {
+  IN
+  OUT
+  LOSS
+  BREAKAGE
+  ADJUSTMENT
+  SALE
+  RECIPE_SALE
+}
+
+enum PaymentMethod {
+  PIX
+  CASH
+  CREDIT
+  DEBIT
+  VOUCHER
+  FIADO
+}
+
+enum SaleStatus {
+  OPEN
+  COMPLETED
+  CANCELLED
+}
+
+enum BottleInstanceStatus {
+  OPEN
+  EMPTY
+  WASTED
+}
+
+enum BottleMovementType {
+  IN
+  LOSS
+  ADJUSTMENT
+  OPEN
+  DOSE_SALE
+  HALF_BOTTLE_SALE
+  FULL_BOTTLE_SALE
+  RECIPE_SALE
+  RESTORE
+}
+
+enum DoseSaleMode {
+  DOSE
+  HALF_BOTTLE
+  FULL_BOTTLE
+}
+
+enum ProductType {
+  SIMPLE
+  FRACTIONAL
+}
+
+enum CreditCustomerStatus {
+  ACTIVE
+  BLOCKED
+}
+
+enum FinancialEntryType {
+  RECEIVABLE
+  PAYABLE
+}
+
+enum FinancialEntryStatus {
+  OPEN
+  PARTIALLY_PAID
+  PAID
+  CANCELLED
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(WAITER)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  sales               Sale[]
+  stockMovements      StockMovement[]
+  passwordResetTokens PasswordResetToken[]
+  bottleInstances     BottleInstance[]
+  bottleMovements     BottleMovement[]
+  financialPayments   FinancialPayment[]
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  token     String    @unique
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model Product {
+  id                  String      @id @default(cuid())
+  name                String
+  category            String
+  purchasePrice       Int // cents
+  salePrice           Int // cents
+  code                String?     @unique
+  barcode             String?     @unique
+  photoUrl            String?
+  description         String?
+  stock               Int         @default(0)
+  minStock            Int         @default(0)
+  supplier            String?
+  active              Boolean     @default(true)
+  productType         ProductType @default(SIMPLE)
+  volumeMl            Int? // container volume in ml; required (via zod) when productType = FRACTIONAL
+  fullBottleSalePrice Int? // cents, optional: selling a sealed FRACTIONAL unit whole
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+
+  saleItems         SaleItem[]
+  stockMovements    StockMovement[]
+  dosePrices        BottleDosePrice[]
+  instances         BottleInstance[]
+  movements         BottleMovement[]
+  doseSaleItems     DoseSaleItem[]
+  recipeIngredients RecipeIngredient[]
+  recipesAsCup      Recipe[]           @relation("RecipeCupProduct")
+
+  @@index([category])
+  @@index([active])
+}
+
+model StockMovement {
+  id        String            @id @default(cuid())
+  productId String
+  product   Product           @relation(fields: [productId], references: [id], onDelete: Restrict)
+  type      StockMovementType
+  quantity  Int // always positive; direction implied by type
+  reason    String?
+  userId    String
+  user      User              @relation(fields: [userId], references: [id], onDelete: Restrict)
+  saleId    String?
+  sale      Sale?             @relation(fields: [saleId], references: [id], onDelete: SetNull)
+  createdAt DateTime          @default(now())
+
+  @@index([productId])
+  @@index([createdAt])
+  @@index([type])
+}
+
+model Sale {
+  id          String     @id @default(cuid())
+  status      SaleStatus @default(COMPLETED)
+  subtotal    Int // cents
+  discount    Int        @default(0) // cents, sale-level
+  surcharge   Int        @default(0) // cents, sale-level
+  total       Int // cents
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Restrict)
+  createdAt   DateTime   @default(now())
+  cancelledAt DateTime?
+
+  items            SaleItem[]
+  payments         Payment[]
+  stockMovements   StockMovement[]
+  doseSaleItems    DoseSaleItem[]
+  recipeSaleItems  RecipeSaleItem[]
+  financialEntries FinancialEntry[]
+  bottleMovements  BottleMovement[]
+
+  @@index([createdAt])
+  @@index([status])
+}
+
+model SaleItem {
+  id                String    @id @default(cuid())
+  saleId            String
+  sale              Sale      @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  productId         String
+  product           Product   @relation(fields: [productId], references: [id], onDelete: Restrict)
+  quantity          Int
+  unitPrice         Int // cents, snapshot of salePrice at time of sale
+  costPriceSnapshot Int // cents, snapshot of purchasePrice at time of sale (for historical profit)
+  discount          Int       @default(0) // cents, per-item
+  surcharge         Int       @default(0) // cents, per-item
+  total             Int // cents, computed line total
+  note              String?
+  cancelledAt       DateTime?
+
+  @@index([saleId])
+  @@index([productId])
+}
+
+model Payment {
+  id        String        @id @default(cuid())
+  saleId    String
+  sale      Sale          @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  method    PaymentMethod
+  amount    Int // cents
+  createdAt DateTime      @default(now())
+
+  @@index([saleId])
+}
+
+// ---------------------------------------------------------------------------
+// Doses (fractional-sale tracking for Product rows with productType = FRACTIONAL)
+// ---------------------------------------------------------------------------
+// Bottle/Cup used to be separate catalogs; Fase 5 merged them into Product. The
+// tables below keep their historical "Bottle*" names (low-risk rename left for
+// later) but now hang off Product via `productId` instead of a `bottleId`.
+
+model DoseSize {
+  id        String   @id @default(cuid())
+  volumeMl  Int      @unique
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  bottlePrices  BottleDosePrice[]
+  doseSaleItems DoseSaleItem[]
+}
+
+model BottleDosePrice {
+  id         String   @id @default(cuid())
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  doseSizeId String
+  doseSize   DoseSize @relation(fields: [doseSizeId], references: [id], onDelete: Cascade)
+  salePrice  Int // cents
+
+  @@unique([productId, doseSizeId])
+}
+
+model BottleInstance {
+  id             String               @id @default(cuid())
+  productId      String
+  product        Product              @relation(fields: [productId], references: [id], onDelete: Restrict)
+  remainingMl    Int
+  status         BottleInstanceStatus @default(OPEN)
+  openedAt       DateTime             @default(now())
+  openedByUserId String
+  openedByUser   User                 @relation(fields: [openedByUserId], references: [id], onDelete: Restrict)
+  closedAt       DateTime?
+
+  movements     BottleMovement[]
+  doseSaleItems DoseSaleItem[]
+
+  @@index([productId, status])
+}
+
+model BottleMovement {
+  id               String              @id @default(cuid())
+  productId        String
+  product          Product             @relation(fields: [productId], references: [id], onDelete: Restrict)
+  bottleInstanceId String?
+  bottleInstance   BottleInstance?     @relation(fields: [bottleInstanceId], references: [id], onDelete: SetNull)
+  type             BottleMovementType
+  volumeMl         Int? // ml delta, for volume-based movements
+  units            Int? // whole-unit delta, for IN/OPEN/FULL_BOTTLE_SALE
+  reason           String?
+  userId           String
+  user             User                @relation(fields: [userId], references: [id], onDelete: Restrict)
+  saleId           String?
+  sale             Sale?               @relation(fields: [saleId], references: [id], onDelete: SetNull)
+  createdAt        DateTime            @default(now())
+
+  @@index([productId, createdAt])
+  @@index([bottleInstanceId])
+  @@index([type])
+}
+
+model Recipe {
+  id            String   @id @default(cuid())
+  name          String
+  cupProductId  String?
+  cupProduct    Product? @relation("RecipeCupProduct", fields: [cupProductId], references: [id], onDelete: SetNull)
+  salePrice     Int // cents
+  photoUrl      String?
+  description   String?
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  ingredients     RecipeIngredient[]
+  recipeSaleItems RecipeSaleItem[]
+}
+
+model RecipeIngredient {
+  id        String  @id @default(cuid())
+  recipeId  String
+  recipe    Recipe  @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  volumeMl  Int? // ml consumed; only applicable/required (via zod) when the product is FRACTIONAL — SIMPLE ingredients (e.g. Gelo, Copo) always consume 1 unit
+
+  @@index([recipeId])
+}
+
+model DoseSaleItem {
+  id                String          @id @default(cuid())
+  saleId            String
+  sale              Sale            @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  productId         String
+  product           Product         @relation(fields: [productId], references: [id], onDelete: Restrict)
+  doseSizeId        String?
+  doseSize          DoseSize?       @relation(fields: [doseSizeId], references: [id], onDelete: SetNull)
+  bottleInstanceId  String? // null only for FULL_BOTTLE_SALE (never opened)
+  bottleInstance    BottleInstance? @relation(fields: [bottleInstanceId], references: [id], onDelete: SetNull)
+  mode              DoseSaleMode
+  volumeMl          Int
+  unitPrice         Int // cents, snapshot
+  costPriceSnapshot Int // cents, snapshot
+  discount          Int             @default(0)
+  total             Int
+  note              String?
+  cancelledAt       DateTime?
+
+  @@index([saleId])
+  @@index([productId])
+}
+
+model RecipeSaleItem {
+  id                String    @id @default(cuid())
+  saleId            String
+  sale              Sale      @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  recipeId          String
+  recipe            Recipe    @relation(fields: [recipeId], references: [id], onDelete: Restrict)
+  quantity          Int
+  unitPrice         Int // cents, snapshot
+  costPriceSnapshot Int // cents, snapshot
+  discount          Int       @default(0)
+  total             Int
+  note              String?
+  cancelledAt       DateTime?
+
+  @@index([saleId])
+}
+
+// ---------------------------------------------------------------------------
+// Fiado / Financeiro (mínimo)
+// ---------------------------------------------------------------------------
+
+model CreditCustomer {
+  id           String               @id @default(cuid())
+  name         String
+  phone        String
+  whatsapp     String?
+  cpf          String?
+  address      String?
+  notes        String?
+  creditLimit  Int // cents
+  status       CreditCustomerStatus @default(ACTIVE)
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+
+  financialEntries FinancialEntry[]
+
+  @@index([status])
+  @@index([name])
+}
+
+model FinancialEntry {
+  id               String               @id @default(cuid())
+  type             FinancialEntryType
+  description      String
+  amount           Int // cents, original amount
+  status           FinancialEntryStatus @default(OPEN)
+  dueDate          DateTime
+  creditCustomerId String?
+  creditCustomer   CreditCustomer?      @relation(fields: [creditCustomerId], references: [id], onDelete: Restrict)
+  saleId           String?
+  sale             Sale?                @relation(fields: [saleId], references: [id], onDelete: SetNull)
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
+  payments FinancialPayment[]
+
+  @@index([creditCustomerId])
+  @@index([status])
+  @@index([dueDate])
+}
+
+model FinancialPayment {
+  id               String         @id @default(cuid())
+  financialEntryId String
+  financialEntry   FinancialEntry @relation(fields: [financialEntryId], references: [id], onDelete: Cascade)
+  amount           Int // cents
+  method           PaymentMethod?
+  note             String?
+  userId           String
+  user             User           @relation(fields: [userId], references: [id], onDelete: Restrict)
+  createdAt        DateTime       @default(now())
+
+  @@index([financialEntryId])
+}
