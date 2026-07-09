@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/auth"
 
-const PUBLIC_ROUTES = [/^\/login/, /^\/forgot-password/, /^\/reset-password/]
+const PUBLIC_ROUTES = [/^\/login/, /^\/forgot-password/, /^\/reset-password/, /^\/setup/]
 
 const roleRules: [pattern: RegExp, roles: string[]][] = [
   [/^\/produtos/, ["ADMIN", "MANAGER"]],
