@@ -16,7 +16,11 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Card, CardContent } from "@/components/ui/card"
-import { PAYMENT_METHOD_LABELS } from "@/lib/constants"
+import {
+  PAYMENT_METHOD_LABELS,
+  FIXED_COST_RECURRENCE_LABELS,
+  FIXED_COST_MONTH_FAMILY_RECURRENCES,
+} from "@/lib/constants"
 import { brlToCents } from "@/lib/money"
 import type { FixedCost } from "@/lib/generated/prisma/client"
 
@@ -34,6 +38,8 @@ export function FixedCostForm({
   const [submitting, setSubmitting] = useState(false)
   const [category, setCategory] = useState(fixedCost?.category ?? categories[0] ?? "")
   const [paymentMethod, setPaymentMethod] = useState(fixedCost?.paymentMethod ?? NO_PAYMENT_METHOD)
+  const [recurrence, setRecurrence] = useState(fixedCost?.recurrence ?? "MONTHLY")
+  const isMonthFamily = (FIXED_COST_MONTH_FAMILY_RECURRENCES as readonly string[]).includes(recurrence)
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -43,8 +49,9 @@ export function FixedCostForm({
       const payload = {
         name: String(form.get("name") ?? ""),
         category,
-        monthlyAmount: brlToCents(String(form.get("monthlyAmount") ?? "0")),
-        dueDay: Number(form.get("dueDay") ?? 1),
+        amount: brlToCents(String(form.get("amount") ?? "0")),
+        recurrence,
+        dueDay: isMonthFamily ? Number(form.get("dueDay") ?? 1) : undefined,
         paymentMethod: paymentMethod === NO_PAYMENT_METHOD ? undefined : paymentMethod,
         notes: String(form.get("notes") ?? ""),
         active: form.get("active") === "on",
@@ -102,31 +109,51 @@ export function FixedCostForm({
           </div>
 
           <div className="flex flex-col gap-2">
-            <Label htmlFor="monthlyAmount">Valor mensal (R$)</Label>
+            <Label htmlFor="amount">Valor (R$)</Label>
             <Input
-              id="monthlyAmount"
-              name="monthlyAmount"
+              id="amount"
+              name="amount"
               inputMode="decimal"
-              defaultValue={
-                fixedCost ? (fixedCost.monthlyAmount / 100).toFixed(2).replace(".", ",") : ""
-              }
+              defaultValue={fixedCost ? (fixedCost.amount / 100).toFixed(2).replace(".", ",") : ""}
               placeholder="0,00"
               required
             />
           </div>
 
           <div className="flex flex-col gap-2">
-            <Label htmlFor="dueDay">Dia de vencimento</Label>
-            <Input
-              id="dueDay"
-              name="dueDay"
-              type="number"
-              min={1}
-              max={31}
-              defaultValue={fixedCost?.dueDay ?? 5}
-              required
-            />
+            <Label htmlFor="recurrence">Recorrência</Label>
+            <Select
+              value={recurrence}
+              onValueChange={(v) => v && setRecurrence(v)}
+              items={FIXED_COST_RECURRENCE_LABELS}
+            >
+              <SelectTrigger id="recurrence" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(FIXED_COST_RECURRENCE_LABELS).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
+
+          {isMonthFamily && (
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="dueDay">Dia de vencimento</Label>
+              <Input
+                id="dueDay"
+                name="dueDay"
+                type="number"
+                min={1}
+                max={31}
+                defaultValue={fixedCost?.dueDay ?? 5}
+                required
+              />
+            </div>
+          )}
 
           <div className="flex flex-col gap-2">
             <Label htmlFor="paymentMethod">Forma de pagamento</Label>

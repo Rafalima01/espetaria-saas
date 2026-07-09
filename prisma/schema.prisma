@@ -88,6 +88,16 @@ enum FinancialEntryStatus {
   CANCELLED
 }
 
+enum FixedCostRecurrence {
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+  BIMONTHLY
+  QUARTERLY
+  SEMIANNUAL
+  ANNUAL
+}
+
 model User {
   id           String   @id @default(cuid())
   name         String
@@ -135,6 +145,7 @@ model Product {
   productType         ProductType @default(SIMPLE)
   volumeMl            Int? // container volume in ml; required (via zod) when productType = FRACTIONAL
   fullBottleSalePrice Int? // cents, optional: selling a sealed FRACTIONAL unit whole
+  defaultDoseMl       Int? // dose padrão (ml) for FRACTIONAL products; used only to estimate "doses restantes"
   createdAt           DateTime    @default(now())
   updatedAt           DateTime    @updatedAt
 
@@ -405,16 +416,17 @@ model FinancialEntry {
 }
 
 model FixedCost {
-  id            String         @id @default(cuid())
+  id            String              @id @default(cuid())
   name          String
   category      String // free text, like Product.category — suggested list + whatever the user types
-  monthlyAmount Int // cents
-  dueDay        Int // 1-31, truncated to the month's last day when shorter
+  amount        Int // cents, per-occurrence amount (was "monthlyAmount" — recurrence is no longer always monthly)
+  dueDay        Int? // 1-31, truncated to the month's last day when shorter; only used/required for MONTHLY-and-coarser recurrences
+  recurrence    FixedCostRecurrence @default(MONTHLY)
   paymentMethod PaymentMethod?
   notes         String?
-  active        Boolean        @default(true)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  active        Boolean             @default(true)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
 
   entries FinancialEntry[]
 

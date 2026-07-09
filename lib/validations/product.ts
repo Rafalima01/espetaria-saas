@@ -8,6 +8,7 @@ export const productBaseSchema = z.object({
   productType: z.enum(["SIMPLE", "FRACTIONAL"]).default("SIMPLE"),
   volumeMl: z.number().int().min(1).optional(),
   fullBottleSalePrice: z.number().int().min(0).optional(),
+  defaultDoseMl: z.number().int().min(1).optional(),
   purchasePrice: z.number().int().min(0),
   salePrice: z.number().int().min(0),
   code: z.string().max(40).optional().or(z.literal("")),
@@ -25,6 +26,13 @@ export const productSchema = productBaseSchema.superRefine((data, ctx) => {
       code: "custom",
       message: "Informe o volume (ml) para um produto do tipo Bebida Fracionada",
       path: ["volumeMl"],
+    })
+  }
+  if (data.productType === "FRACTIONAL" && !data.defaultDoseMl) {
+    ctx.addIssue({
+      code: "custom",
+      message: "Informe a dose padrão (ml) para um produto do tipo Bebida Fracionada",
+      path: ["defaultDoseMl"],
     })
   }
 })

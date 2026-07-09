@@ -9,6 +9,9 @@ import {
   AlertTriangle,
   CheckCircle2,
   Landmark,
+  Droplets,
+  GlassWater,
+  Percent,
 } from "lucide-react"
 import { getDashboardSummary } from "@/lib/dashboard/getSummary"
 import {
@@ -18,6 +21,7 @@ import {
   getPaymentMethodBreakdown,
 } from "@/lib/dashboard/getCharts"
 import { getLowStockAlerts } from "@/lib/stock/getLowStockAlerts"
+import { getFractionalStockDashboardSummary } from "@/lib/bottles/getFractionalStockSummary"
 import { SummaryCard } from "@/components/dashboard/summary-card"
 import { SalesByHourChart } from "@/components/dashboard/sales-by-hour-chart"
 import { SalesByDayChart } from "@/components/dashboard/sales-by-day-chart"
@@ -28,7 +32,7 @@ import { StockStatusBadge } from "@/components/stock/stock-status-badge"
 import { centsToBRL } from "@/lib/money"
 
 export default async function DashboardPage() {
-  const [summary, salesByHour, salesByDay, topProducts, paymentBreakdown, lowStockAlerts] =
+  const [summary, salesByHour, salesByDay, topProducts, paymentBreakdown, lowStockAlerts, fractionalStock] =
     await Promise.all([
       getDashboardSummary(),
       getSalesByHour(),
@@ -36,6 +40,7 @@ export default async function DashboardPage() {
       getTopProducts(),
       getPaymentMethodBreakdown(),
       getLowStockAlerts(),
+      getFractionalStockDashboardSummary(),
     ])
 
   return (
@@ -116,6 +121,35 @@ export default async function DashboardPage() {
           value={centsToBRL(summary.netProfitMonth)}
           icon={TrendingUp}
           hint="Lucro do mês − Custos Fixos do Mês"
+        />
+      </div>
+
+      <div>
+        <h2 className="text-lg font-medium">Estoque de Doseáveis</h2>
+        <p className="text-sm text-muted-foreground">Bebidas fracionadas — últimos 30 dias</p>
+      </div>
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <SummaryCard
+          title="Volume disponível"
+          value={`${fractionalStock.volumeDisponivel}ml`}
+          icon={Droplets}
+        />
+        <SummaryCard
+          title="Volume consumido"
+          value={`${fractionalStock.volumeConsumido}ml`}
+          icon={GlassWater}
+          hint="Últimos 30 dias"
+        />
+        <SummaryCard
+          title="Doses restantes"
+          value={String(fractionalStock.dosesRestantesTotal)}
+          icon={GlassWater}
+        />
+        <SummaryCard
+          title="% consumido"
+          value={`${fractionalStock.percentualConsumido.toFixed(0)}%`}
+          icon={Percent}
+          hint="Últimos 30 dias"
         />
       </div>
 

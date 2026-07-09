@@ -19,7 +19,7 @@ export default async function DashboardLayout({
     : [[], []]
 
   return (
-    <div className="flex flex-1 overflow-hidden">
+    <div className="flex h-dvh overflow-hidden">
       <Sidebar role={session.user.role} />
       <div className="flex flex-1 flex-col overflow-hidden">
         <Topbar

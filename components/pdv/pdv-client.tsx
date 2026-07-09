@@ -102,7 +102,7 @@ export function PdvClient({
   }
 
   return (
-    <div className="grid gap-4 lg:h-[calc(100vh-8rem)] lg:grid-cols-[1fr_340px]">
+    <div className="flex flex-col gap-4 lg:grid lg:h-full lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_minmax(280px,360px)] lg:items-stretch">
       <CatalogSearch
         products={products}
         recipes={recipes}

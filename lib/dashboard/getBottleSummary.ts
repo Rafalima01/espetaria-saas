@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import { getLastNDaysRange } from "@/lib/dates"
+import { getFractionalStockDashboardSummary } from "@/lib/bottles/getFractionalStockSummary"
 
 export async function getBottleDashboardSummary() {
   const { start, end } = getLastNDaysRange(30)
@@ -10,6 +11,9 @@ export async function getBottleDashboardSummary() {
     garrafasFinalizadas,
     doseSaleItems,
     lossMovements,
+    mlVendidosAgg,
+    garrafasVendidas,
+    fractionalStock,
   ] = await Promise.all([
     prisma.doseSaleItem.count({
       where: { mode: "DOSE", cancelledAt: null, sale: { createdAt: { gte: start, lt: end } } },
@@ -24,6 +28,18 @@ export async function getBottleDashboardSummary() {
       where: { type: "LOSS", createdAt: { gte: start, lt: end } },
       _sum: { volumeMl: true, units: true },
     }),
+    prisma.doseSaleItem.aggregate({
+      where: {
+        mode: { in: ["DOSE", "HALF_BOTTLE"] },
+        cancelledAt: null,
+        sale: { createdAt: { gte: start, lt: end } },
+      },
+      _sum: { volumeMl: true },
+    }),
+    prisma.doseSaleItem.count({
+      where: { mode: "FULL_BOTTLE", cancelledAt: null, sale: { createdAt: { gte: start, lt: end } } },
+    }),
+    getFractionalStockDashboardSummary(),
   ])
 
   const totalProfit = doseSaleItems.reduce(
@@ -67,5 +83,8 @@ export async function getBottleDashboardSummary() {
     averageYieldPerBottle: Math.round(averageYield * 10) / 10,
     wasteVolumeMl: lossMovements._sum.volumeMl ?? 0,
     wasteUnits: lossMovements._sum.units ?? 0,
+    mlVendidos: mlVendidosAgg._sum.volumeMl ?? 0,
+    garrafasVendidas,
+    volumeRestanteTotal: fractionalStock.volumeDisponivel,
   }
 }

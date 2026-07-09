@@ -46,6 +46,8 @@ export function ProductForm({ product }: { product?: Product }) {
           productType === "FRACTIONAL" && form.get("fullBottleSalePrice")
             ? brlToCents(String(form.get("fullBottleSalePrice")))
             : undefined,
+        defaultDoseMl:
+          productType === "FRACTIONAL" ? Number(form.get("defaultDoseMl") ?? 0) : undefined,
         purchasePrice: brlToCents(String(form.get("purchasePrice") ?? "0")),
         salePrice: brlToCents(String(form.get("salePrice") ?? "0")),
         code: String(form.get("code") ?? ""),
@@ -174,6 +176,20 @@ export function ProductForm({ product }: { product?: Product }) {
                       : ""
                   }
                 />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="defaultDoseMl">Dose padrão (ml)</Label>
+                <Input
+                  id="defaultDoseMl"
+                  name="defaultDoseMl"
+                  type="number"
+                  min={1}
+                  defaultValue={product?.defaultDoseMl ?? ""}
+                  required
+                />
+                <p className="text-xs text-muted-foreground">
+                  Usada só para estimar &quot;doses restantes&quot; no Estoque/Dashboard.
+                </p>
               </div>
             </>
           )}

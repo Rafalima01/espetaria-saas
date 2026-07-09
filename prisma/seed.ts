@@ -48,6 +48,7 @@ const SEED_FRACTIONAL_PRODUCTS = [
     name: "Jack Daniels 1000ml",
     category: "Whisky",
     volumeMl: 1000,
+    defaultDoseMl: 50,
     purchasePrice: 8000,
     fullBottleSalePrice: 30000,
     stock: 6,
@@ -62,6 +63,7 @@ const SEED_FRACTIONAL_PRODUCTS = [
     name: "Old Parr 1000ml",
     category: "Whisky",
     volumeMl: 1000,
+    defaultDoseMl: 50,
     purchasePrice: 9000,
     fullBottleSalePrice: 32000,
     stock: 4,
@@ -76,6 +78,7 @@ const SEED_FRACTIONAL_PRODUCTS = [
     name: "Smirnoff 998ml",
     category: "Vodka",
     volumeMl: 998,
+    defaultDoseMl: 40,
     purchasePrice: 4000,
     fullBottleSalePrice: 15000,
     stock: 5,
@@ -90,6 +93,7 @@ const SEED_FRACTIONAL_PRODUCTS = [
     name: "Tanqueray 750ml",
     category: "Gin",
     volumeMl: 750,
+    defaultDoseMl: 50,
     purchasePrice: 7000,
     fullBottleSalePrice: 25000,
     stock: 3,
@@ -101,6 +105,7 @@ const SEED_FRACTIONAL_PRODUCTS = [
     name: "Cachaça 51 965ml",
     category: "Cachaça",
     volumeMl: 965,
+    defaultDoseMl: 40,
     purchasePrice: 1500,
     fullBottleSalePrice: 6000,
     stock: 8,
@@ -115,6 +120,7 @@ const SEED_FRACTIONAL_PRODUCTS = [
     name: "Energético 269ml",
     category: "Energético",
     volumeMl: 269,
+    defaultDoseMl: 250,
     purchasePrice: 300,
     fullBottleSalePrice: null,
     stock: 60,
@@ -539,31 +545,41 @@ async function main() {
 
   console.log("Criando custos fixos...")
   const fixedCostsData = [
-    { name: "Aluguel do ponto", category: "Aluguel", monthlyAmount: 350000, dueDay: 5, paymentMethod: "PIX" as const, monthsBack: 3 },
-    { name: "Conta de energia", category: "Energia Elétrica", monthlyAmount: 45000, dueDay: 10, paymentMethod: "PIX" as const, monthsBack: 3 },
-    { name: "Internet fibra", category: "Internet", monthlyAmount: 15000, dueDay: 15, paymentMethod: "CREDIT" as const, monthsBack: 2 },
-    { name: "Folha de pagamento", category: "Funcionários", monthlyAmount: 800000, dueDay: 5, paymentMethod: "PIX" as const, monthsBack: 2 },
+    { name: "Aluguel do ponto", category: "Aluguel", amount: 350000, dueDay: 5, recurrence: "MONTHLY" as const, paymentMethod: "PIX" as const, daysBack: 90 },
+    { name: "Conta de energia", category: "Energia Elétrica", amount: 45000, dueDay: 10, recurrence: "MONTHLY" as const, paymentMethod: "PIX" as const, daysBack: 90 },
+    { name: "Internet fibra", category: "Internet", amount: 15000, dueDay: 15, recurrence: "MONTHLY" as const, paymentMethod: "CREDIT" as const, daysBack: 60 },
+    { name: "Folha de pagamento", category: "Funcionários", amount: 800000, dueDay: 5, recurrence: "MONTHLY" as const, paymentMethod: "PIX" as const, daysBack: 60 },
+    { name: "Pagamento de funcionário temporário", category: "Funcionários", amount: 50000, recurrence: "WEEKLY" as const, paymentMethod: "PIX" as const, daysBack: 35 },
+    { name: "Licença de Software", category: "Sistema", amount: 35000, dueDay: 20, recurrence: "ANNUAL" as const, paymentMethod: "CREDIT" as const, daysBack: 60 },
   ]
-  for (const { monthsBack, ...data } of fixedCostsData) {
+  for (const { daysBack, ...data } of fixedCostsData) {
     await prisma.fixedCost.create({
-      data: { ...data, createdAt: new Date(now - monthsBack * 30 * 24 * 60 * 60 * 1000) },
+      data: { ...data, createdAt: new Date(now - daysBack * 24 * 60 * 60 * 1000) },
     })
   }
 
-  // Lazily backfills one competência per month per fixed cost (same helper the
-  // app calls on every Financeiro/Dashboard page load) — reused here instead of
-  // duplicating the month-iteration logic.
+  // Lazily backfills one competência per occurrence per fixed cost (same helper
+  // the app calls on every Financeiro/Dashboard page load) — reused here instead
+  // of duplicating the recurrence-iteration logic.
   await ensureFixedCostEntries()
 
-  // Mark every competência except the current month as paid, so the demo data
-  // mirrors the "Aluguel Jan→Pago, Fev→Pago, Mar→Pendente..." example.
-  const currentMonthEntries = await prisma.financialEntry.findMany({
+  // Mark every occurrence except each fixed cost's most recent one as paid, so
+  // the demo data mirrors the "Aluguel Jan→Pago, Fev→Pago, Mar→Pendente..."
+  // example. Grouped/ordered by dueDate (not the raw competencia string) since
+  // WEEKLY/BIWEEKLY use a different competencia format ("YYYY-MM-DD") than
+  // MONTHLY-and-coarser ("YYYY-MM"), which wouldn't sort correctly together.
+  const allEntries = await prisma.financialEntry.findMany({
     where: { type: "PAYABLE", competencia: { not: null } },
-    orderBy: { competencia: "desc" },
+    orderBy: { dueDate: "desc" },
   })
-  const latestCompetencia = currentMonthEntries[0]?.competencia
-  for (const entry of currentMonthEntries) {
-    if (entry.competencia === latestCompetencia) continue
+  const latestEntryIdByFixedCost = new Map<string, string>()
+  for (const entry of allEntries) {
+    if (entry.fixedCostId && !latestEntryIdByFixedCost.has(entry.fixedCostId)) {
+      latestEntryIdByFixedCost.set(entry.fixedCostId, entry.id)
+    }
+  }
+  for (const entry of allEntries) {
+    if (latestEntryIdByFixedCost.get(entry.fixedCostId ?? "") === entry.id) continue
     await prisma.$transaction(async (tx) => {
       await tx.financialPayment.create({
         data: { financialEntryId: entry.id, amount: entry.amount, method: "PIX", userId: cashier.id },

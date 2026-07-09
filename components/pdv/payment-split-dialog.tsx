@@ -77,7 +77,7 @@ export function PaymentSplitDialog({
 
           {rows.map((row, idx) => (
             <div key={idx} className="flex flex-col gap-2">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Select
                   value={row.method}
                   onValueChange={(value) => {

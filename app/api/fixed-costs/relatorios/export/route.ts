@@ -40,8 +40,11 @@ export async function GET(req: NextRequest) {
     for (const e of entries) {
       const category = e.fixedCost?.category ?? "Outros"
       byCategory.set(category, (byCategory.get(category) ?? 0) + e.amount)
-      const competencia = e.competencia ?? "-"
-      byMonth.set(competencia, (byMonth.get(competencia) ?? 0) + e.amount)
+      // Same month-bucketing as getFixedCostReports.ts — WEEKLY/BIWEEKLY store a
+      // full "YYYY-MM-DD" competencia, so several occurrences can land in the
+      // same month and must be summed into one "Por mês" row.
+      const month = e.competencia ? e.competencia.slice(0, 7) : "-"
+      byMonth.set(month, (byMonth.get(month) ?? 0) + e.amount)
     }
 
     const categoryRows = [...byCategory.entries()]

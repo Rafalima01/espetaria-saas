@@ -23,6 +23,7 @@ import { StockStatusBadge } from "@/components/stock/stock-status-badge"
 import { RestockDialog } from "@/components/stock/restock-dialog"
 import { STOCK_MOVEMENT_TYPE_LABELS, PRODUCT_TYPE_LABELS } from "@/lib/constants"
 import { getStockStatus } from "@/lib/stock/getStockStatus"
+import type { FractionalStockSummary } from "@/lib/bottles/getFractionalStockSummary"
 import type { Product } from "@/lib/generated/prisma/client"
 
 type MovementLite = { type: string; createdAt: string | Date } | null
@@ -44,10 +45,12 @@ export function InventoryTable({
   products,
   lastMovementByProduct,
   responsibleName,
+  fractionalSummaries = {},
 }: {
   products: Product[]
   lastMovementByProduct: Record<string, MovementLite>
   responsibleName: string
+  fractionalSummaries?: Record<string, FractionalStockSummary>
 }) {
   const [restockProductId, setRestockProductId] = useState<string | null>(null)
   const [search, setSearch] = useState("")
@@ -169,6 +172,7 @@ export function InventoryTable({
                 <TableHead>Estoque atual</TableHead>
                 <TableHead>Estoque mínimo</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Doses restantes</TableHead>
                 <TableHead>Última movimentação</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
@@ -176,14 +180,23 @@ export function InventoryTable({
             <TableBody>
               {filtered.map((product) => {
                 const lastMovement = lastMovementByProduct[product.id]
+                const fractional =
+                  product.productType === "FRACTIONAL" ? fractionalSummaries[product.id] : undefined
                 return (
                   <TableRow key={product.id}>
                     <TableCell className="font-medium">{product.name}</TableCell>
                     <TableCell className="text-muted-foreground">{product.category}</TableCell>
-                    <TableCell>{product.stock}</TableCell>
+                    <TableCell>
+                      {fractional
+                        ? `${fractional.physicalBottles} garrafas · ${fractional.totalVolumeMl}ml`
+                        : product.stock}
+                    </TableCell>
                     <TableCell className="text-muted-foreground">{product.minStock}</TableCell>
                     <TableCell>
                       <StockStatusBadge stock={product.stock} minStock={product.minStock} />
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {fractional ? (fractional.dosesRemaining ?? "-") : "-"}
                     </TableCell>
                     <TableCell className="whitespace-nowrap text-muted-foreground">
                       {lastMovement

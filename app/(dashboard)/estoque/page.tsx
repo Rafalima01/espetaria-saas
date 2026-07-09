@@ -5,12 +5,22 @@ import { Button } from "@/components/ui/button"
 import { getStockStatus } from "@/lib/stock/getStockStatus"
 import { InventoryTable } from "@/components/stock/inventory-table"
 import { StockStatusSummary } from "@/components/stock/stock-status-summary"
+import { computeFractionalStockSummary } from "@/lib/bottles/getFractionalStockSummary"
 
 export default async function EstoquePage() {
   const [session, products] = await Promise.all([
     auth(),
-    prisma.product.findMany({ orderBy: { name: "asc" } }),
+    prisma.product.findMany({
+      orderBy: { name: "asc" },
+      include: { instances: { where: { status: "OPEN" } } },
+    }),
   ])
+
+  const fractionalSummaries = Object.fromEntries(
+    products
+      .filter((p) => p.productType === "FRACTIONAL")
+      .map((p) => [p.id, computeFractionalStockSummary(p, p.instances)])
+  )
 
   const lastMovements = await Promise.all(
     products.map((p) =>
@@ -52,6 +62,7 @@ export default async function EstoquePage() {
         products={products}
         lastMovementByProduct={Object.fromEntries(lastMovementByProduct)}
         responsibleName={session?.user?.name ?? "Usuário"}
+        fractionalSummaries={fractionalSummaries}
       />
     </div>
   )

@@ -79,14 +79,14 @@ export function CatalogSearch({
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex min-h-0 flex-col gap-3 lg:h-full lg:overflow-hidden">
       <Input
         placeholder="Buscar produto ou receita por nome, categoria ou código..."
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         autoFocus
       />
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:max-h-[60vh] lg:grid-cols-3 lg:overflow-y-auto xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:min-h-0 lg:flex-1 lg:grid-cols-3 lg:overflow-y-auto xl:grid-cols-4">
         {filteredProducts.map((product) => {
           const isFractional = product.productType === "FRACTIONAL"
           const outOfStock = !isFractional && product.stock <= 0

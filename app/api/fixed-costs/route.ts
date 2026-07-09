@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
-import { fixedCostBaseSchema } from "@/lib/validations/fixed-cost"
+import { fixedCostSchema } from "@/lib/validations/fixed-cost"
 import { requireRole, forbiddenResponse, ForbiddenError } from "@/lib/auth-guards"
 
 export async function GET(req: NextRequest) {
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     requireRole(session, ["ADMIN", "MANAGER"])
 
     const body = await req.json()
-    const parsed = fixedCostBaseSchema.safeParse(body)
+    const parsed = fixedCostSchema.safeParse(body)
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
     }

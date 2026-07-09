@@ -79,6 +79,7 @@ export default async function DespesasFixasPage() {
                 name: e.fixedCost.name,
                 category: e.fixedCost.category,
                 paymentMethod: e.fixedCost.paymentMethod,
+                recurrence: e.fixedCost.recurrence,
               }
             : null,
           payments: e.payments.map((p) => ({ amount: p.amount })),

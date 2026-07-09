@@ -100,3 +100,23 @@ export const FIXED_COST_CATEGORIES = [
 // How many days before a fixed cost's due date it starts showing up as
 // "vencendo em breve" rather than just a normal pending item.
 export const FIXED_COST_DUE_SOON_DAYS = 5
+
+export const FIXED_COST_RECURRENCE_LABELS: Record<string, string> = {
+  WEEKLY: "Semanal",
+  BIWEEKLY: "Quinzenal",
+  MONTHLY: "Mensal",
+  BIMONTHLY: "Bimestral",
+  QUARTERLY: "Trimestral",
+  SEMIANNUAL: "Semestral",
+  ANNUAL: "Anual",
+}
+
+// Recurrences anchored to a calendar day-of-month (dueDay applies); WEEKLY/BIWEEKLY
+// are anchored to the fixed cost's creation date instead.
+export const FIXED_COST_MONTH_FAMILY_RECURRENCES = [
+  "MONTHLY",
+  "BIMONTHLY",
+  "QUARTERLY",
+  "SEMIANNUAL",
+  "ANNUAL",
+] as const

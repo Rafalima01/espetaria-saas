@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { StockStatusBadge } from "@/components/stock/stock-status-badge"
 import { StockMovementTable } from "@/components/stock/stock-movement-table"
 import { ProductRestockButton } from "@/components/stock/product-restock-button"
+import { computeFractionalStockSummary } from "@/lib/bottles/getFractionalStockSummary"
 
 export default async function ProductStockHistoryPage({
   params,
@@ -14,7 +15,10 @@ export default async function ProductStockHistoryPage({
   const { productId } = await params
   const [session, product, movements] = await Promise.all([
     auth(),
-    prisma.product.findUnique({ where: { id: productId } }),
+    prisma.product.findUnique({
+      where: { id: productId },
+      include: { instances: { where: { status: "OPEN" } } },
+    }),
     prisma.stockMovement.findMany({
       where: { productId },
       include: { product: { select: { name: true } }, user: { select: { name: true } }, sale: true },
@@ -22,6 +26,11 @@ export default async function ProductStockHistoryPage({
     }),
   ])
   if (!product) notFound()
+
+  const fractional =
+    product.productType === "FRACTIONAL"
+      ? computeFractionalStockSummary(product, product.instances)
+      : null
 
   return (
     <div className="flex flex-col gap-4">
@@ -62,6 +71,45 @@ export default async function ProductStockHistoryPage({
           </CardContent>
         </Card>
       </div>
+
+      {fractional && (
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Garrafas físicas
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-2xl font-semibold">{fractional.physicalBottles}</CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Volume total restante
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-2xl font-semibold">{fractional.totalVolumeMl}ml</CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm font-medium text-muted-foreground">% restante</CardTitle>
+            </CardHeader>
+            <CardContent className="text-2xl font-semibold">
+              {fractional.percentRemaining.toFixed(0)}%
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Doses restantes
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-2xl font-semibold">
+              {fractional.dosesRemaining ?? "-"}
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       <div className="flex flex-col gap-2">
         <h2 className="text-lg font-medium">Histórico de movimentações</h2>

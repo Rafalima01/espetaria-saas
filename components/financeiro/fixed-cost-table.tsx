@@ -22,7 +22,11 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { centsToBRL } from "@/lib/money"
-import { FINANCIAL_ENTRY_STATUS_LABELS, PAYMENT_METHOD_LABELS } from "@/lib/constants"
+import {
+  FINANCIAL_ENTRY_STATUS_LABELS,
+  PAYMENT_METHOD_LABELS,
+  FIXED_COST_RECURRENCE_LABELS,
+} from "@/lib/constants"
 
 export type FixedCostEntryRow = {
   id: string
@@ -31,7 +35,13 @@ export type FixedCostEntryRow = {
   status: string
   dueDate: Date
   competencia: string | null
-  fixedCost: { id: string; name: string; category: string; paymentMethod: string | null } | null
+  fixedCost: {
+    id: string
+    name: string
+    category: string
+    paymentMethod: string | null
+    recurrence: string
+  } | null
   payments: { amount: number }[]
 }
 
@@ -205,6 +215,7 @@ export function FixedCostTable({ entries }: { entries: FixedCostEntryRow[] }) {
                 <TableHead>Competência</TableHead>
                 <TableHead>Nome</TableHead>
                 <TableHead>Categoria</TableHead>
+                <TableHead>Recorrência</TableHead>
                 <TableHead>Valor</TableHead>
                 <TableHead>Vencimento</TableHead>
                 <TableHead>Status</TableHead>
@@ -231,6 +242,9 @@ export function FixedCostTable({ entries }: { entries: FixedCostEntryRow[] }) {
                       )}
                     </TableCell>
                     <TableCell className="text-muted-foreground">{entry.fixedCost?.category ?? "-"}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {entry.fixedCost ? FIXED_COST_RECURRENCE_LABELS[entry.fixedCost.recurrence] ?? entry.fixedCost.recurrence : "-"}
+                    </TableCell>
                     <TableCell>{centsToBRL(entry.amount)}</TableCell>
                     <TableCell className={overdue ? "font-medium text-destructive" : "text-muted-foreground"}>
                       {new Date(entry.dueDate).toLocaleDateString("pt-BR")}

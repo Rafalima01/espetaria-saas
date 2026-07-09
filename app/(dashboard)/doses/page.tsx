@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { GlassWater, Wine, TrendingUp, Percent, AlertTriangle } from "lucide-react"
+import { GlassWater, Wine, TrendingUp, Percent, AlertTriangle, Droplets } from "lucide-react"
 import { getBottleDashboardSummary } from "@/lib/dashboard/getBottleSummary"
 import { SummaryCard } from "@/components/dashboard/summary-card"
 import { Button } from "@/components/ui/button"
@@ -69,6 +69,21 @@ export default async function DosesDashboardPage() {
           title="Perdas por desperdício"
           value={`${summary.wasteVolumeMl}ml / ${summary.wasteUnits} un.`}
           icon={AlertTriangle}
+        />
+        <SummaryCard
+          title="Ml vendidos"
+          value={`${summary.mlVendidos}ml`}
+          icon={Droplets}
+        />
+        <SummaryCard
+          title="Garrafas vendidas (inteiras)"
+          value={String(summary.garrafasVendidas)}
+          icon={Wine}
+        />
+        <SummaryCard
+          title="Volume restante em estoque"
+          value={`${summary.volumeRestanteTotal}ml`}
+          icon={Droplets}
         />
       </div>
     </div>
