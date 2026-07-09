@@ -8,6 +8,7 @@ import {
   GlassWater,
   HandCoins,
   UserCog,
+  Landmark,
 } from "lucide-react"
 
 export type NavItem = {
@@ -59,6 +60,12 @@ export const NAV_ITEMS: NavItem[] = [
     href: "/fiado",
     icon: HandCoins,
     roles: ["ADMIN", "MANAGER", "CASHIER"],
+  },
+  {
+    title: "Financeiro",
+    href: "/financeiro",
+    icon: Landmark,
+    roles: ["ADMIN", "MANAGER"],
   },
   {
     title: "Usuários",

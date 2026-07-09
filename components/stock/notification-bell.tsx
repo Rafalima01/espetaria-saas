@@ -13,28 +13,36 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu"
 import type { LowStockAlert } from "@/lib/stock/getLowStockAlerts"
+import type { FixedCostAlert } from "@/lib/financeiro/getFixedCostAlerts"
+import { centsToBRL } from "@/lib/money"
 
-export function NotificationBell({ alerts }: { alerts: LowStockAlert[] }) {
+export function NotificationBell({
+  stockAlerts = [],
+  financialAlerts = [],
+}: {
+  stockAlerts?: LowStockAlert[]
+  financialAlerts?: FixedCostAlert[]
+}) {
+  const total = stockAlerts.length + financialAlerts.length
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger render={<Button variant="ghost" size="icon" aria-label="Notificações" />}>
         <span className="relative">
           <Bell className="size-4" />
-          {alerts.length > 0 && (
+          {total > 0 && (
             <span className="absolute -top-1.5 -right-1.5 flex size-4 items-center justify-center rounded-full bg-destructive text-[10px] text-destructive-foreground">
-              {alerts.length > 9 ? "9+" : alerts.length}
+              {total > 9 ? "9+" : total}
             </span>
           )}
         </span>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-72">
-        <DropdownMenuGroup>
-          <DropdownMenuLabel>Alertas de estoque</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          {alerts.length === 0 ? (
-            <p className="px-2 py-3 text-sm text-muted-foreground">Nenhum alerta no momento.</p>
-          ) : (
-            alerts.slice(0, 8).map((p) => (
+        {stockAlerts.length > 0 && (
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>Alertas de estoque</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {stockAlerts.slice(0, 8).map((p) => (
               <DropdownMenuItem key={p.id} render={<Link href={`/estoque/${p.id}`} />}>
                 <div className="flex w-full items-center justify-between gap-2 text-sm">
                   <span>
@@ -45,9 +53,28 @@ export function NotificationBell({ alerts }: { alerts: LowStockAlert[] }) {
                   </span>
                 </div>
               </DropdownMenuItem>
-            ))
-          )}
-        </DropdownMenuGroup>
+            ))}
+          </DropdownMenuGroup>
+        )}
+        {financialAlerts.length > 0 && (
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>Contas a pagar</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {financialAlerts.slice(0, 8).map((f) => (
+              <DropdownMenuItem key={f.id} render={<Link href="/financeiro/despesas-fixas" />}>
+                <div className="flex w-full items-center justify-between gap-2 text-sm">
+                  <span>
+                    {f.status === "OVERDUE" ? "🔴" : "🟡"} {f.description}
+                  </span>
+                  <span className="text-xs text-muted-foreground">{centsToBRL(f.amount)}</span>
+                </div>
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuGroup>
+        )}
+        {total === 0 && (
+          <p className="px-2 py-3 text-sm text-muted-foreground">Nenhum alerta no momento.</p>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   )

@@ -2,6 +2,8 @@ import "dotenv/config"
 import bcrypt from "bcryptjs"
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3"
 import { PrismaClient } from "../lib/generated/prisma/client"
+import { ensureFixedCostEntries } from "../lib/financeiro/ensureFixedCostEntries"
+import { recomputeEntryStatus } from "../lib/fiado/recomputeEntryStatus"
 
 const adapter = new PrismaBetterSqlite3({
   url: process.env.DATABASE_URL ?? "file:./dev.db",
@@ -138,6 +140,7 @@ async function main() {
   console.log("Limpando dados existentes...")
   await prisma.financialPayment.deleteMany()
   await prisma.financialEntry.deleteMany()
+  await prisma.fixedCost.deleteMany()
   await prisma.creditCustomer.deleteMany()
   await prisma.doseSaleItem.deleteMany()
   await prisma.recipeSaleItem.deleteMany()
@@ -531,6 +534,41 @@ async function main() {
     })
     await prisma.financialPayment.create({
       data: { financialEntryId: paidEntry.id, amount: 3000, method: "PIX", userId: cashier.id },
+    })
+  }
+
+  console.log("Criando custos fixos...")
+  const fixedCostsData = [
+    { name: "Aluguel do ponto", category: "Aluguel", monthlyAmount: 350000, dueDay: 5, paymentMethod: "PIX" as const, monthsBack: 3 },
+    { name: "Conta de energia", category: "Energia Elétrica", monthlyAmount: 45000, dueDay: 10, paymentMethod: "PIX" as const, monthsBack: 3 },
+    { name: "Internet fibra", category: "Internet", monthlyAmount: 15000, dueDay: 15, paymentMethod: "CREDIT" as const, monthsBack: 2 },
+    { name: "Folha de pagamento", category: "Funcionários", monthlyAmount: 800000, dueDay: 5, paymentMethod: "PIX" as const, monthsBack: 2 },
+  ]
+  for (const { monthsBack, ...data } of fixedCostsData) {
+    await prisma.fixedCost.create({
+      data: { ...data, createdAt: new Date(now - monthsBack * 30 * 24 * 60 * 60 * 1000) },
+    })
+  }
+
+  // Lazily backfills one competência per month per fixed cost (same helper the
+  // app calls on every Financeiro/Dashboard page load) — reused here instead of
+  // duplicating the month-iteration logic.
+  await ensureFixedCostEntries()
+
+  // Mark every competência except the current month as paid, so the demo data
+  // mirrors the "Aluguel Jan→Pago, Fev→Pago, Mar→Pendente..." example.
+  const currentMonthEntries = await prisma.financialEntry.findMany({
+    where: { type: "PAYABLE", competencia: { not: null } },
+    orderBy: { competencia: "desc" },
+  })
+  const latestCompetencia = currentMonthEntries[0]?.competencia
+  for (const entry of currentMonthEntries) {
+    if (entry.competencia === latestCompetencia) continue
+    await prisma.$transaction(async (tx) => {
+      await tx.financialPayment.create({
+        data: { financialEntryId: entry.id, amount: entry.amount, method: "PIX", userId: cashier.id },
+      })
+      await recomputeEntryStatus(tx, entry.id)
     })
   }
 

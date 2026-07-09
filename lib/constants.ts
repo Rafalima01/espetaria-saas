@@ -78,3 +78,25 @@ export const FINANCIAL_ENTRY_STATUS_LABELS: Record<string, string> = {
   PAID: "Pago",
   CANCELLED: "Cancelado",
 }
+
+export const FIXED_COST_CATEGORIES = [
+  "Aluguel",
+  "Água",
+  "Energia Elétrica",
+  "Internet",
+  "Funcionários",
+  "Contabilidade",
+  "Sistema",
+  "Gás",
+  "Telefone",
+  "Impostos",
+  "Licenças",
+  "Marketing",
+  "Manutenção",
+  "Limpeza",
+  "Outros",
+] as const
+
+// How many days before a fixed cost's due date it starts showing up as
+// "vencendo em breve" rather than just a normal pending item.
+export const FIXED_COST_DUE_SOON_DAYS = 5

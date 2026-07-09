@@ -12,6 +12,7 @@ const roleRules: [pattern: RegExp, roles: string[]][] = [
   [/^\/receitas/, ["ADMIN", "MANAGER"]],
   [/^\/doses/, ["ADMIN", "MANAGER"]],
   [/^\/fiado/, ["ADMIN", "MANAGER", "CASHIER"]],
+  [/^\/financeiro/, ["ADMIN", "MANAGER"]],
   [/^\/configuracoes/, ["ADMIN"]],
 ]
 

@@ -1,5 +1,15 @@
 import Link from "next/link"
-import { DollarSign, ShoppingCart, TrendingUp, Wallet, Receipt, Users, AlertTriangle } from "lucide-react"
+import {
+  DollarSign,
+  ShoppingCart,
+  TrendingUp,
+  Wallet,
+  Receipt,
+  Users,
+  AlertTriangle,
+  CheckCircle2,
+  Landmark,
+} from "lucide-react"
 import { getDashboardSummary } from "@/lib/dashboard/getSummary"
 import {
   getSalesByHour,
@@ -78,6 +88,34 @@ export default async function DashboardPage() {
           value={String(lowStockAlerts.length)}
           icon={AlertTriangle}
           hint="Baixo + crítico"
+        />
+      </div>
+
+      <div>
+        <h2 className="text-lg font-medium">Resultado financeiro do mês</h2>
+        <p className="text-sm text-muted-foreground">Lucro bruto menos custos fixos do mês</p>
+      </div>
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <SummaryCard
+          title="Custos Fixos do Mês"
+          value={centsToBRL(summary.fixedCostsMonth)}
+          icon={Landmark}
+        />
+        <SummaryCard
+          title="Valor Pago"
+          value={centsToBRL(summary.fixedCostsPaidMonth)}
+          icon={CheckCircle2}
+        />
+        <SummaryCard
+          title="Valor Pendente"
+          value={centsToBRL(summary.fixedCostsPendingMonth)}
+          icon={Wallet}
+        />
+        <SummaryCard
+          title="Lucro Líquido"
+          value={centsToBRL(summary.netProfitMonth)}
+          icon={TrendingUp}
+          hint="Lucro do mês − Custos Fixos do Mês"
         />
       </div>
 

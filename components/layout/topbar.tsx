@@ -11,15 +11,18 @@ import { NotificationBell } from "@/components/stock/notification-bell"
 import { ROLE_LABELS } from "@/components/layout/nav-items"
 import { logoutAction } from "@/app/(dashboard)/actions"
 import type { LowStockAlert } from "@/lib/stock/getLowStockAlerts"
+import type { FixedCostAlert } from "@/lib/financeiro/getFixedCostAlerts"
 
 export function Topbar({
   name,
   role,
   lowStockAlerts = [],
+  fixedCostAlerts = [],
 }: {
   name: string
   role: string
   lowStockAlerts?: LowStockAlert[]
+  fixedCostAlerts?: FixedCostAlert[]
 }) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const initials = name
@@ -54,7 +57,7 @@ export function Topbar({
 
       <div className="flex items-center gap-2">
         {(role === "ADMIN" || role === "MANAGER") && (
-          <NotificationBell alerts={lowStockAlerts} />
+          <NotificationBell stockAlerts={lowStockAlerts} financialAlerts={fixedCostAlerts} />
         )}
         <ThemeToggle />
         <div className="mx-1 hidden flex-col items-end leading-tight sm:flex">

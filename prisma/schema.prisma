@@ -390,14 +390,36 @@ model FinancialEntry {
   creditCustomer   CreditCustomer?      @relation(fields: [creditCustomerId], references: [id], onDelete: Restrict)
   saleId           String?
   sale             Sale?                @relation(fields: [saleId], references: [id], onDelete: SetNull)
+  fixedCostId      String?
+  fixedCost        FixedCost?           @relation(fields: [fixedCostId], references: [id], onDelete: Restrict)
+  competencia      String? // "YYYY-MM", only set for entries generated from a FixedCost
   createdAt        DateTime             @default(now())
   updatedAt        DateTime             @updatedAt
 
   payments FinancialPayment[]
 
+  @@unique([fixedCostId, competencia])
   @@index([creditCustomerId])
   @@index([status])
   @@index([dueDate])
+}
+
+model FixedCost {
+  id            String         @id @default(cuid())
+  name          String
+  category      String // free text, like Product.category — suggested list + whatever the user types
+  monthlyAmount Int // cents
+  dueDay        Int // 1-31, truncated to the month's last day when shorter
+  paymentMethod PaymentMethod?
+  notes         String?
+  active        Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  entries FinancialEntry[]
+
+  @@index([active])
+  @@index([category])
 }
 
 model FinancialPayment {

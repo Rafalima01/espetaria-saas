@@ -29,6 +29,7 @@ async function main() {
   console.log("Apagando todos os dados de demonstração...")
   await prisma.financialPayment.deleteMany()
   await prisma.financialEntry.deleteMany()
+  await prisma.fixedCost.deleteMany()
   await prisma.creditCustomer.deleteMany()
   await prisma.doseSaleItem.deleteMany()
   await prisma.recipeSaleItem.deleteMany()
