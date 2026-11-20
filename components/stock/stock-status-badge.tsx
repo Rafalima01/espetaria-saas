@@ -1,16 +1,36 @@
-import { Badge } from "@/components/ui/badge"
 import {
   getStockStatus,
   STOCK_STATUS_LABELS,
-  STOCK_STATUS_EMOJI,
-  STOCK_STATUS_BADGE_VARIANT,
+  type StockStatus,
 } from "@/lib/stock/getStockStatus"
+import { cn } from "@/lib/utils"
 
-export function StockStatusBadge({ stock, minStock }: { stock: number; minStock: number }) {
+export const STOCK_STATUS_STYLE: Record<StockStatus, string> = {
+  NORMAL: "bg-success/15 text-success",
+  LOW: "bg-warning/15 text-warning",
+  CRITICAL: "bg-destructive/15 text-destructive",
+}
+
+export function StockStatusBadge({
+  stock,
+  minStock,
+  className,
+}: {
+  stock: number
+  minStock: number
+  className?: string
+}) {
   const status = getStockStatus(stock, minStock)
   return (
-    <Badge variant={STOCK_STATUS_BADGE_VARIANT[status]}>
-      {STOCK_STATUS_EMOJI[status]} {STOCK_STATUS_LABELS[status]}
-    </Badge>
+    <span
+      className={cn(
+        "inline-flex h-5 w-fit items-center gap-1.5 rounded-full px-2 text-xs font-medium whitespace-nowrap",
+        STOCK_STATUS_STYLE[status],
+        className
+      )}
+    >
+      <span className="size-1.5 rounded-full bg-current" aria-hidden />
+      {STOCK_STATUS_LABELS[status]}
+    </span>
   )
 }

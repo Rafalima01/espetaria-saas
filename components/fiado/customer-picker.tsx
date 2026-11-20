@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
+import { Search } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { StatusPill } from "@/components/ui/status-pill"
 import { centsToBRL, brlToCents } from "@/lib/money"
 
 type CreditCustomer = {
@@ -68,22 +68,27 @@ export function CustomerPicker({
 
   if (selected) {
     return (
-      <div className="flex flex-col gap-2 rounded-lg border p-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium">{selected.name}</p>
-            <p className="text-xs text-muted-foreground">{selected.phone}</p>
+      <div className="flex flex-col gap-2 rounded-xl bg-background p-3 ring-1 ring-foreground/10">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-3">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-secondary text-sm font-semibold text-primary">
+              {selected.name.charAt(0).toUpperCase()}
+            </span>
+            <div>
+              <p className="text-sm font-medium">{selected.name}</p>
+              <p className="text-xs text-muted-foreground">{selected.phone}</p>
+            </div>
           </div>
           <Button type="button" variant="ghost" size="sm" onClick={clearSelection}>
             Trocar
           </Button>
         </div>
         {balance && (
-          <div className="flex items-center gap-2 text-xs">
-            <span className="text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <span className="text-muted-foreground tabular-nums">
               Saldo devedor: {centsToBRL(balance.balance)} / limite {centsToBRL(balance.creditLimit)}
             </span>
-            {balance.overLimit && <Badge variant="destructive">Acima do limite</Badge>}
+            {balance.overLimit && <StatusPill tone="danger">Acima do limite</StatusPill>}
           </div>
         )}
       </div>
@@ -92,25 +97,29 @@ export function CustomerPicker({
 
   return (
     <div className="flex flex-col gap-2">
-      <Input
-        placeholder="Buscar cliente por nome ou telefone..."
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-      />
+      <div className="relative">
+        <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          className="h-10 rounded-xl bg-background pl-9"
+          placeholder="Buscar cliente por nome ou telefone"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      </div>
       {results.length > 0 && (
-        <div className="flex flex-col gap-1 rounded-lg border">
+        <div className="flex flex-col overflow-hidden rounded-xl bg-background ring-1 ring-foreground/10">
           {results.map((c) => (
             <button
               key={c.id}
               type="button"
-              className="flex items-center justify-between px-3 py-2 text-left text-sm hover:bg-muted disabled:opacity-50"
+              className="flex items-center justify-between px-3 py-2.5 text-left text-sm transition-colors hover:bg-muted disabled:opacity-50"
               disabled={c.status === "BLOCKED"}
               onClick={() => selectCustomer(c)}
             >
               <span>
-                {c.name} — {c.phone}
+                {c.name} <span className="text-muted-foreground">· {c.phone}</span>
               </span>
-              {c.status === "BLOCKED" && <Badge variant="destructive">Bloqueado</Badge>}
+              {c.status === "BLOCKED" && <StatusPill tone="danger">Bloqueado</StatusPill>}
             </button>
           ))}
         </div>
@@ -120,10 +129,10 @@ export function CustomerPicker({
           type="button"
           variant="outline"
           size="sm"
-          className="w-fit"
+          className="w-fit rounded-lg"
           onClick={() => setShowQuickCreate(true)}
         >
-          Nenhum encontrado — cadastrar &quot;{query}&quot;
+          Nenhum encontrado: cadastrar &quot;{query}&quot;
         </Button>
       )}
       {showQuickCreate && (
@@ -179,22 +188,21 @@ function QuickCreateForm({
   }
 
   return (
-    <Card>
-      <CardContent className="flex flex-col gap-2 pt-4">
-        <form onSubmit={handleSubmit} className="flex flex-col gap-2">
-          <Input name="name" placeholder="Nome" defaultValue={initialName} required />
-          <Input name="phone" placeholder="Telefone" required />
-          <Input name="creditLimit" placeholder="Limite de crédito (R$)" />
-          <div className="flex gap-2">
-            <Button type="submit" size="sm" disabled={submitting}>
-              {submitting ? "Salvando..." : "Cadastrar"}
-            </Button>
-            <Button type="button" variant="outline" size="sm" onClick={onCancel}>
-              Cancelar
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+    <form
+      onSubmit={handleSubmit}
+      className="flex flex-col gap-2 rounded-xl bg-background p-3 ring-1 ring-foreground/10"
+    >
+      <Input name="name" placeholder="Nome" className="h-9 rounded-lg" defaultValue={initialName} required />
+      <Input name="phone" placeholder="Telefone" className="h-9 rounded-lg" required />
+      <Input name="creditLimit" placeholder="Limite de crédito (R$)" className="h-9 rounded-lg" />
+      <div className="flex gap-2">
+        <Button type="submit" size="sm" className="rounded-lg" loading={submitting}>
+          {submitting ? "Salvando..." : "Cadastrar"}
+        </Button>
+        <Button type="button" variant="ghost" size="sm" className="rounded-lg" onClick={onCancel}>
+          Cancelar
+        </Button>
+      </div>
+    </form>
   )
 }

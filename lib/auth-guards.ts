@@ -15,3 +15,15 @@ export function requireRole(session: Session | null, allowed: string[]) {
 export function forbiddenResponse(message = "Você não tem permissão para esta ação") {
   return NextResponse.json({ error: message }, { status: 403 })
 }
+
+/**
+ * Versão sem exceção, para handlers GET: devolve a resposta de erro (401/403)
+ * ou null quando o perfil da sessão está entre os permitidos.
+ */
+export function denyUnlessRole(session: Session | null, allowed: string[]) {
+  if (!session?.user) {
+    return NextResponse.json({ error: "Não autenticado" }, { status: 401 })
+  }
+  if (!allowed.includes(session.user.role)) return forbiddenResponse()
+  return null
+}

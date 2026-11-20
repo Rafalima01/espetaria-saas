@@ -5,9 +5,12 @@ import { PrismaAdapter } from "@auth/prisma-adapter"
 
 import { prisma } from "@/lib/prisma"
 
+const REVALIDATE_MS = 60 * 1000
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
-  session: { strategy: "jwt" },
+  // 12h cobre um turno de trabalho; depois disso é preciso entrar de novo.
+  session: { strategy: "jwt", maxAge: 12 * 60 * 60 },
   pages: { signIn: "/login" },
   // Required outside Vercel (e.g. Railway) so NextAuth trusts the Host header
   // from the platform's reverse proxy when resolving callback URLs.
@@ -39,10 +42,26 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
-    jwt({ token, user }) {
+    async jwt({ token, user }) {
       if (user) {
         token.id = user.id as string
         token.role = user.role as string
+        token.checkedAt = Date.now()
+        return token
+      }
+
+      // Revalida no banco a cada minuto: quem foi desativado, apagado ou teve o
+      // perfil trocado perde o acesso (ou ganha o novo perfil) sem esperar o
+      // fim da sessão. Devolver null encerra a sessão.
+      const checkedAt = typeof token.checkedAt === "number" ? token.checkedAt : 0
+      if (Date.now() - checkedAt > REVALIDATE_MS) {
+        const fresh = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { active: true, role: true },
+        })
+        if (!fresh || !fresh.active) return null
+        token.role = fresh.role
+        token.checkedAt = Date.now()
       }
       return token
     },

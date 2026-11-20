@@ -1,8 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/layout/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { ServiceWorkerRegister } from "@/components/layout/service-worker-register";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,8 +16,18 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Espetaria SaaS",
-  description: "Gestão completa para espetarias, bares e pequenos restaurantes",
+  applicationName: "JP Espeto Bar",
+  title: "JP Espeto Bar",
+  description: "Sistema de gestão do JP Espeto Bar: PDV, estoque, doses, fiado e financeiro",
+  appleWebApp: { capable: true, title: "JP Espeto", statusBarStyle: "black" },
+  formatDetection: { telephone: false },
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#1A141A" },
+    { media: "(prefers-color-scheme: light)", color: "#F7F2E8" },
+  ],
 };
 
 export default function RootLayout({
@@ -34,6 +45,7 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
           {children}
           <Toaster />
+          <ServiceWorkerRegister />
         </ThemeProvider>
       </body>
     </html>

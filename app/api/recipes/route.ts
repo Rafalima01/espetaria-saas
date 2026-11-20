@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { recipeSchema } from "@/lib/validations/recipe"
-import { requireRole, forbiddenResponse, ForbiddenError } from "@/lib/auth-guards"
+import { requireRole, forbiddenResponse, ForbiddenError, denyUnlessRole } from "@/lib/auth-guards"
 
 export async function GET(req: NextRequest) {
   const session = await auth()
-  if (!session?.user) return forbiddenResponse("Não autenticado")
+  const denied = denyUnlessRole(session, ["ADMIN","MANAGER"])
+  if (denied) return denied
 
   const onlyActive = req.nextUrl.searchParams.get("active")
   const recipes = await prisma.recipe.findMany({

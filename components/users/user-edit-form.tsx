@@ -2,21 +2,16 @@
 
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { KeyRound } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ROLES } from "@/lib/validations/user"
-import { ROLE_LABELS } from "@/components/layout/nav-items"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { RolePicker } from "@/components/users/role-picker"
+
+const FIELD_INPUT = "h-10 rounded-xl bg-background"
 
 type UserData = {
   id: string
@@ -88,44 +83,75 @@ export function UserEditForm({ user, isSelf }: { user: UserData; isSelf: boolean
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <Card>
-        <CardContent className="pt-6">
-          <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2">
-            <div className="flex flex-col gap-2 sm:col-span-2">
-              <Label htmlFor="name">Nome</Label>
-              <Input id="name" name="name" defaultValue={user.name} required />
-            </div>
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+      <div className="flex min-w-0 flex-col gap-4">
+        <form id="user-edit-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Dados</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-4 sm:grid-cols-2">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="name">Nome</Label>
+                <Input id="name" name="name" className={FIELD_INPUT} defaultValue={user.name} required />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="email">Email</Label>
+                <Input id="email" className={FIELD_INPUT} value={user.email} disabled />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Perfil</CardTitle>
+              <CardDescription>
+                {isSelf
+                  ? "Você não pode alterar seu próprio perfil."
+                  : "Define o que esta pessoa pode acessar"}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <RolePicker value={role} onChange={setRole} disabled={isSelf} />
+            </CardContent>
+          </Card>
+        </form>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Redefinir senha</CardTitle>
+            <CardDescription>Define uma nova senha para este usuário agora</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-wrap items-end gap-3">
             <div className="flex flex-col gap-2">
-              <Label>Email</Label>
-              <Input value={user.email} disabled />
+              <Label htmlFor="newPassword">Nova senha</Label>
+              <Input
+                id="newPassword"
+                type="password"
+                minLength={8}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="h-10 w-64 rounded-xl bg-background"
+              />
             </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="role">Perfil</Label>
-              <Select
-                value={role}
-                onValueChange={(v) => setRole(v ?? user.role)}
-                items={Object.fromEntries(ROLES.map((r) => [r, ROLE_LABELS[r]]))}
-                disabled={isSelf}
-              >
-                <SelectTrigger id="role" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {ROLES.map((r) => (
-                    <SelectItem key={r} value={r}>
-                      {ROLE_LABELS[r]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {isSelf && (
-                <p className="text-xs text-muted-foreground">
-                  Você não pode alterar seu próprio perfil.
-                </p>
-              )}
-            </div>
-            <div className="flex items-center gap-2 sm:col-span-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-10 rounded-xl px-4"
+              loading={resetSubmitting}
+              onClick={handleResetPassword}
+            >
+              <KeyRound className="size-4" />
+              {resetSubmitting ? "Salvando..." : "Redefinir senha"}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card className="lg:sticky lg:top-0">
+        <CardContent className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center gap-2">
               <Checkbox
                 id="active"
                 checked={active}
@@ -133,52 +159,29 @@ export function UserEditForm({ user, isSelf }: { user: UserData; isSelf: boolean
                 disabled={isSelf}
               />
               <Label htmlFor="active">Usuário ativo</Label>
-              {isSelf && (
-                <span className="text-xs text-muted-foreground">
-                  (você não pode desativar a si mesmo)
-                </span>
-              )}
             </div>
-            <div className="flex gap-2 sm:col-span-2">
-              <Button type="submit" disabled={submitting}>
-                {submitting ? "Salvando..." : "Salvar alterações"}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => router.push("/configuracoes/usuarios")}
-              >
-                Cancelar
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Redefinir senha</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-wrap items-end gap-2">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="newPassword">Nova senha</Label>
-            <Input
-              id="newPassword"
-              type="password"
-              minLength={8}
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              className="w-64"
-            />
+            {isSelf && (
+              <p className="text-xs text-muted-foreground">Você não pode desativar a si mesmo.</p>
+            )}
           </div>
-          <Button
-            type="button"
-            variant="outline"
-            disabled={resetSubmitting}
-            onClick={handleResetPassword}
-          >
-            {resetSubmitting ? "Salvando..." : "Redefinir senha"}
-          </Button>
+          <div className="flex flex-col gap-2">
+            <Button
+              type="submit"
+              form="user-edit-form"
+              loading={submitting}
+              className="h-11 rounded-xl text-base font-semibold"
+            >
+              {submitting ? "Salvando..." : "Salvar alterações"}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-10 rounded-xl"
+              onClick={() => router.push("/configuracoes/usuarios")}
+            >
+              Cancelar
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>

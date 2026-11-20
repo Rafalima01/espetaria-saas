@@ -7,8 +7,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
+import { Card } from "@/components/ui/card"
 import { STOCK_MOVEMENT_TYPE_LABELS } from "@/lib/constants"
+import { cn } from "@/lib/utils"
 
 type MovementRow = {
   id: string
@@ -21,29 +22,33 @@ type MovementRow = {
   user: { name: string }
 }
 
-const TYPE_VARIANT: Record<string, "default" | "secondary" | "destructive"> = {
-  IN: "default",
-  SALE: "secondary",
-  OUT: "destructive",
-  LOSS: "destructive",
-  BREAKAGE: "destructive",
-  ADJUSTMENT: "secondary",
+const TYPE_STYLE: Record<string, string> = {
+  IN: "bg-success/15 text-success",
+  SALE: "bg-secondary text-secondary-foreground",
+  OUT: "bg-destructive/15 text-destructive",
+  LOSS: "bg-destructive/15 text-destructive",
+  BREAKAGE: "bg-destructive/15 text-destructive",
+  ADJUSTMENT: "bg-warning/15 text-warning",
 }
 
 export function StockMovementTable({ movements }: { movements: MovementRow[] }) {
   if (movements.length === 0) {
-    return <p className="text-muted-foreground">Nenhuma movimentação registrada.</p>
+    return (
+      <Card className="p-10 text-center text-sm text-muted-foreground">
+        Nenhuma movimentação registrada.
+      </Card>
+    )
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg border">
+    <Card className="gap-0 p-0">
       <Table>
         <TableHeader>
-          <TableRow>
+          <TableRow className="hover:bg-transparent">
             <TableHead>Data</TableHead>
             <TableHead>Produto</TableHead>
             <TableHead>Tipo</TableHead>
-            <TableHead>Quantidade</TableHead>
+            <TableHead className="text-right">Quantidade</TableHead>
             <TableHead>Responsável</TableHead>
             <TableHead>Origem</TableHead>
             <TableHead>Motivo</TableHead>
@@ -52,31 +57,41 @@ export function StockMovementTable({ movements }: { movements: MovementRow[] }) 
         <TableBody>
           {movements.map((m) => (
             <TableRow key={m.id}>
-              <TableCell className="whitespace-nowrap text-muted-foreground">
+              <TableCell className="text-muted-foreground">
                 {new Date(m.createdAt).toLocaleString("pt-BR")}
               </TableCell>
               <TableCell className="font-medium">{m.product.name}</TableCell>
               <TableCell>
-                <Badge variant={TYPE_VARIANT[m.type] ?? "secondary"}>
+                <span
+                  className={cn(
+                    "inline-flex h-5 items-center rounded-full px-2 text-xs font-medium whitespace-nowrap",
+                    TYPE_STYLE[m.type] ?? "bg-secondary text-secondary-foreground"
+                  )}
+                >
                   {STOCK_MOVEMENT_TYPE_LABELS[m.type] ?? m.type}
-                </Badge>
+                </span>
               </TableCell>
-              <TableCell>{m.quantity}</TableCell>
+              <TableCell className="text-right font-medium tabular-nums">{m.quantity}</TableCell>
               <TableCell className="text-muted-foreground">{m.user.name}</TableCell>
               <TableCell className="text-muted-foreground">
                 {m.saleId ? (
-                  <Link href={`/vendas/${m.saleId}`} className="underline">
+                  <Link
+                    href={`/vendas/${m.saleId}`}
+                    className="text-primary underline-offset-4 hover:underline"
+                  >
                     Venda #{m.saleId.slice(-6)}
                   </Link>
                 ) : (
-                  "-"
+                  "—"
                 )}
               </TableCell>
-              <TableCell className="text-muted-foreground">{m.reason ?? "-"}</TableCell>
+              <TableCell className="max-w-64 truncate text-muted-foreground">
+                {m.reason ?? "—"}
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
-    </div>
+    </Card>
   )
 }

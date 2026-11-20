@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
+import { denyUnlessRole } from "@/lib/auth-guards"
 
 export async function GET() {
   const session = await auth()
-  if (!session?.user) {
-    return NextResponse.json({ error: "Não autenticado" }, { status: 401 })
-  }
+  const denied = denyUnlessRole(session, ["ADMIN", "MANAGER"])
+  if (denied) return denied
 
   const products = await prisma.product.findMany({
     where: { active: true },

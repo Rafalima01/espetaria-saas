@@ -27,10 +27,5 @@ export default async function VendaDetailPage({
   const role = session?.user.role
   const canCancel = role === "ADMIN" || role === "MANAGER" || role === "CASHIER"
 
-  return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-semibold">Detalhe da venda</h1>
-      <SaleDetail sale={sale} canCancel={canCancel} />
-    </div>
-  )
+  return <SaleDetail sale={sale} canCancel={canCancel} />
 }

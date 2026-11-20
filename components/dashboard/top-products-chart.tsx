@@ -1,7 +1,8 @@
 "use client"
 
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { AXIS_TICK, TOOLTIP_STYLE } from "@/components/dashboard/chart-style"
 
 export function TopProductsChart({
   data,
@@ -11,23 +12,24 @@ export function TopProductsChart({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Produtos mais vendidos (30 dias)</CardTitle>
+        <CardTitle className="text-base">Produtos mais vendidos</CardTitle>
+        <CardDescription>Últimos 30 dias, por quantidade</CardDescription>
       </CardHeader>
       <CardContent className="h-64">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} layout="vertical" margin={{ left: 16 }}>
-            <CartesianGrid strokeDasharray="3 3" horizontal={false} className="stroke-border" />
-            <XAxis type="number" fontSize={12} tickLine={false} axisLine={false} />
+          <BarChart data={data} layout="vertical" margin={{ left: 8, right: 8 }}>
+            <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border)" />
+            <XAxis type="number" tick={AXIS_TICK} tickLine={false} axisLine={false} />
             <YAxis
               type="category"
               dataKey="name"
-              fontSize={12}
+              tick={AXIS_TICK}
               width={120}
               tickLine={false}
               axisLine={false}
             />
-            <Tooltip contentStyle={{ fontSize: 12 }} />
-            <Bar dataKey="quantity" fill="var(--color-primary)" radius={[0, 4, 4, 0]} />
+            <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: "var(--muted)", fillOpacity: 0.4 }} />
+            <Bar dataKey="quantity" fill="var(--primary)" radius={[0, 6, 6, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </CardContent>

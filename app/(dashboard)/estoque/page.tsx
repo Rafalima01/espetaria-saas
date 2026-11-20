@@ -1,7 +1,9 @@
 import Link from "next/link"
+import { ClipboardList } from "lucide-react"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { Button } from "@/components/ui/button"
+import { PageHeader } from "@/components/layout/page-header"
 import { getStockStatus } from "@/lib/stock/getStockStatus"
 import { InventoryTable } from "@/components/stock/inventory-table"
 import { StockStatusSummary } from "@/components/stock/stock-status-summary"
@@ -40,21 +42,30 @@ export default async function EstoquePage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Estoque</h1>
-          <p className="text-muted-foreground">
-            Visualização e gerenciamento do estoque atual — o cadastro fica em Produtos.
-          </p>
-        </div>
-        <Button
-          variant="outline"
-          render={<Link href="/estoque/nova-movimentacao" />}
-          nativeButton={false}
-        >
-          Registrar perda/quebra/ajuste
-        </Button>
-      </div>
+      <PageHeader
+        title="Estoque"
+        description="Situação atual de cada produto. O cadastro fica em Produtos."
+        actions={
+          <>
+            <Button
+              variant="outline"
+              className="h-10 rounded-xl px-4"
+              render={<Link href="/estoque/movimentacoes" />}
+              nativeButton={false}
+            >
+              <ClipboardList className="size-4" />
+              Movimentações
+            </Button>
+            <Button
+              className="h-10 rounded-xl px-4"
+              render={<Link href="/estoque/nova-movimentacao" />}
+              nativeButton={false}
+            >
+              Registrar perda, quebra ou ajuste
+            </Button>
+          </>
+        }
+      />
 
       <StockStatusSummary counts={counts} />
 

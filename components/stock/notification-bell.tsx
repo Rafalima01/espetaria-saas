@@ -31,7 +31,7 @@ export function NotificationBell({
         <span className="relative">
           <Bell className="size-4" />
           {total > 0 && (
-            <span className="absolute -top-1.5 -right-1.5 flex size-4 items-center justify-center rounded-full bg-destructive text-[10px] text-destructive-foreground">
+            <span className="animate-pop-in absolute -top-1.5 -right-1.5 flex size-4 items-center justify-center rounded-full bg-destructive text-[10px] text-destructive-foreground">
               {total > 9 ? "9+" : total}
             </span>
           )}

@@ -88,11 +88,12 @@ export function RestockDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Reabastecer estoque</DialogTitle>
+          <p className="text-sm text-muted-foreground">Responsável: {responsibleName}</p>
         </DialogHeader>
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
             <Label htmlFor="restock-product">Produto</Label>
             <Select
@@ -101,7 +102,7 @@ export function RestockDialog({
               items={Object.fromEntries(products.map((p) => [p.id, `${p.name} (estoque: ${p.stock})`]))}
               disabled={!!initialProductId}
             >
-              <SelectTrigger id="restock-product" className="w-full">
+              <SelectTrigger id="restock-product" className="h-10 w-full rounded-xl">
                 <SelectValue placeholder="Selecione" />
               </SelectTrigger>
               <SelectContent>
@@ -114,25 +115,28 @@ export function RestockDialog({
             </Select>
           </div>
 
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="restock-quantity">Quantidade adicionada</Label>
-            <Input
-              id="restock-quantity"
-              type="number"
-              min={1}
-              value={quantityText}
-              onChange={(e) => setQuantityText(e.target.value)}
-            />
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="restock-date">Data</Label>
-            <Input
-              id="restock-date"
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-            />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="restock-quantity">Quantidade adicionada</Label>
+              <Input
+                id="restock-quantity"
+                type="number"
+                min={1}
+                className="h-10 rounded-xl bg-background"
+                value={quantityText}
+                onChange={(e) => setQuantityText(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="restock-date">Data</Label>
+              <Input
+                id="restock-date"
+                type="date"
+                className="h-10 rounded-xl bg-background"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+              />
+            </div>
           </div>
 
           <div className="flex flex-col gap-2">
@@ -140,25 +144,33 @@ export function RestockDialog({
             <Textarea
               id="restock-note"
               placeholder="Reabastecimento"
+              className="rounded-xl bg-background"
               value={note}
               onChange={(e) => setNote(e.target.value)}
             />
           </div>
 
-          <div className="flex flex-col gap-1">
-            <Label>Responsável</Label>
-            <p className="text-sm text-muted-foreground">{responsibleName}</p>
-          </div>
-
           {selectedProduct && quantity > 0 && (
-            <p className="text-sm text-muted-foreground">
-              Novo estoque: {selectedProduct.stock} + {quantity} ={" "}
-              <span className="font-semibold text-foreground">{resultingStock}</span>
-            </p>
+            <div className="flex items-end justify-between rounded-2xl bg-secondary/60 p-4">
+              <span className="text-sm text-muted-foreground">
+                {selectedProduct.stock} + {quantity}
+              </span>
+              <span className="text-sm text-muted-foreground">
+                Novo estoque{" "}
+                <span className="ml-1 text-2xl font-semibold text-primary tabular-nums">
+                  {resultingStock}
+                </span>
+              </span>
+            </div>
           )}
         </div>
         <DialogFooter>
-          <Button disabled={submitting || !productId || quantity <= 0} onClick={handleConfirm}>
+          <Button
+            className="h-11 w-full rounded-xl text-base font-semibold sm:w-auto"
+            loading={submitting}
+            disabled={!productId || quantity <= 0}
+            onClick={handleConfirm}
+          >
             {submitting ? "Salvando..." : "Confirmar reabastecimento"}
           </Button>
         </DialogFooter>

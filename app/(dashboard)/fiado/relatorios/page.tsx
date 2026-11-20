@@ -1,14 +1,14 @@
+import { PageHeader } from "@/components/layout/page-header"
 import { ReportsFilter } from "@/components/fiado/reports-filter"
 
 export default function RelatoriosFiadoPage() {
   return (
-    <div className="flex flex-col gap-4">
-      <div>
-        <h1 className="text-2xl font-semibold">Relatórios de Fiado</h1>
-        <p className="text-muted-foreground">
-          Filtre por período e exporte em Excel ou impressão/PDF.
-        </p>
-      </div>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        title="Relatórios de fiado"
+        description="Filtre por período e exporte em Excel ou impressão/PDF."
+        backHref="/fiado"
+      />
       <ReportsFilter />
     </div>
   )

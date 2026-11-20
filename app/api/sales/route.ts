@@ -11,11 +11,12 @@ import {
   FullBottlePriceNotConfiguredError,
 } from "@/lib/bottles/computeDoseSaleItem"
 import { RecipeNotFoundError } from "@/lib/recipes/computeRecipeSaleItem"
-import { requireRole, forbiddenResponse, ForbiddenError } from "@/lib/auth-guards"
+import { requireRole, forbiddenResponse, ForbiddenError, denyUnlessRole } from "@/lib/auth-guards"
 
 export async function GET(req: NextRequest) {
   const session = await auth()
-  if (!session?.user) return forbiddenResponse("Não autenticado")
+  const denied = denyUnlessRole(session, ["ADMIN","MANAGER","CASHIER"])
+  if (denied) return denied
 
   const limit = Number(req.nextUrl.searchParams.get("limit") ?? 100)
   const sales = await prisma.sale.findMany({

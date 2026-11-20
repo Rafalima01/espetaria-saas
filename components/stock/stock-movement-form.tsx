@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select"
 import { Card, CardContent } from "@/components/ui/card"
 import { STOCK_MOVEMENT_TYPE_LABELS } from "@/lib/constants"
+import { cn } from "@/lib/utils"
 import type { Product } from "@/lib/generated/prisma/client"
 
 // Entrada (IN) has its own dedicated flow — see "Reabastecer Estoque" — so it's
@@ -68,10 +69,10 @@ export function StockMovementForm({ products }: { products: Product[] }) {
   }
 
   return (
-    <Card>
-      <CardContent className="pt-6">
-        <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2">
-          <div className="flex flex-col gap-2 sm:col-span-2">
+    <Card className="max-w-2xl">
+      <CardContent>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+          <div className="flex flex-col gap-2">
             <Label htmlFor="product">Produto</Label>
             <Select
               value={productId}
@@ -81,7 +82,7 @@ export function StockMovementForm({ products }: { products: Product[] }) {
               )}
               required
             >
-              <SelectTrigger id="product" className="w-full">
+              <SelectTrigger id="product" className="h-10 w-full rounded-xl">
                 <SelectValue placeholder="Selecione um produto" />
               </SelectTrigger>
               <SelectContent>
@@ -95,26 +96,26 @@ export function StockMovementForm({ products }: { products: Product[] }) {
           </div>
 
           <div className="flex flex-col gap-2">
-            <Label htmlFor="type">Tipo</Label>
-            <Select
-              value={type}
-              onValueChange={(v) => v && setType(v)}
-              items={Object.fromEntries(
-                MOVEMENT_TYPES.map((t) => [t, STOCK_MOVEMENT_TYPE_LABELS[t]])
-              )}
-              required
-            >
-              <SelectTrigger id="type" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {MOVEMENT_TYPES.map((t) => (
-                  <SelectItem key={t} value={t}>
-                    {STOCK_MOVEMENT_TYPE_LABELS[t]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label id="type-label">Tipo</Label>
+            <div className="flex flex-wrap gap-2" role="radiogroup" aria-labelledby="type-label">
+              {MOVEMENT_TYPES.map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  role="radio"
+                  aria-checked={type === t}
+                  onClick={() => setType(t)}
+                  className={cn(
+                    "rounded-full px-4 py-1.5 text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                    type === t
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-secondary text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {STOCK_MOVEMENT_TYPE_LABELS[t]}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="flex flex-col gap-2">
@@ -122,27 +123,37 @@ export function StockMovementForm({ products }: { products: Product[] }) {
               {isAdjustment ? "Novo estoque total" : "Quantidade"}
             </Label>
             <Input
+              // Remount when the type or product changes so the adjustment
+              // default (current stock) is applied again.
+              key={`${type}-${productId}`}
               id="quantity"
               name="quantity"
               type="number"
               min={0}
               required
+              className="h-10 rounded-xl bg-background sm:max-w-48"
               defaultValue={isAdjustment ? selectedProduct?.stock : undefined}
             />
+            {isAdjustment && selectedProduct && (
+              <p className="text-xs text-muted-foreground">
+                Estoque atual: {selectedProduct.stock}
+              </p>
+            )}
           </div>
 
-          <div className="flex flex-col gap-2 sm:col-span-2">
+          <div className="flex flex-col gap-2">
             <Label htmlFor="reason">Motivo (opcional)</Label>
-            <Textarea id="reason" name="reason" />
+            <Textarea id="reason" name="reason" className="min-h-24 rounded-xl bg-background" />
           </div>
 
-          <div className="flex gap-2 sm:col-span-2">
-            <Button type="submit" disabled={submitting}>
+          <div className="flex gap-2">
+            <Button type="submit" loading={submitting} className="h-11 rounded-xl px-5 font-semibold">
               {submitting ? "Salvando..." : "Registrar movimentação"}
             </Button>
             <Button
               type="button"
-              variant="outline"
+              variant="ghost"
+              className="h-11 rounded-xl"
               onClick={() => router.push("/estoque")}
             >
               Cancelar

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma"
+import { PageHeader } from "@/components/layout/page-header"
 import { StockMovementForm } from "@/components/stock/stock-movement-form"
 
 export default async function NovaMovimentacaoPage() {
@@ -8,11 +9,12 @@ export default async function NovaMovimentacaoPage() {
   })
 
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-semibold">Registrar perda, quebra ou ajuste</h1>
-      <p className="text-muted-foreground">
-        Para entradas de estoque, use o botão Reabastecer na tela de Estoque.
-      </p>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        title="Registrar perda, quebra ou ajuste"
+        description="Para entradas de estoque, use o botão Reabastecer na tela de Estoque."
+        backHref="/estoque"
+      />
       <StockMovementForm products={products} />
     </div>
   )

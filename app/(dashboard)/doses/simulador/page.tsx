@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma"
+import { PageHeader } from "@/components/layout/page-header"
 import { SimulatorForm } from "@/components/doses/simulator-form"
 
 export default async function SimuladorPage() {
@@ -8,13 +9,12 @@ export default async function SimuladorPage() {
   })
 
   return (
-    <div className="flex flex-col gap-4">
-      <div>
-        <h1 className="text-2xl font-semibold">Simulador de Lucro</h1>
-        <p className="text-muted-foreground">
-          Calcule o rendimento de uma garrafa sem precisar cadastrar preços — nada aqui é salvo.
-        </p>
-      </div>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        title="Simulador de lucro"
+        description="Calcule o rendimento de uma garrafa sem cadastrar preços. Nada aqui é salvo."
+        backHref="/doses"
+      />
       <SimulatorForm products={products} />
     </div>
   )

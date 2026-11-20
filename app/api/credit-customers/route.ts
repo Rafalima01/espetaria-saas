@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { creditCustomerSchema } from "@/lib/validations/credit-customer"
-import { requireRole, forbiddenResponse, ForbiddenError } from "@/lib/auth-guards"
+import { requireRole, forbiddenResponse, ForbiddenError, denyUnlessRole } from "@/lib/auth-guards"
 
 export async function GET(req: NextRequest) {
   const session = await auth()
-  if (!session?.user) return forbiddenResponse("Não autenticado")
+  const denied = denyUnlessRole(session, ["ADMIN","MANAGER","CASHIER","WAITER"])
+  if (denied) return denied
 
   const search = req.nextUrl.searchParams.get("search") ?? undefined
   const customers = await prisma.creditCustomer.findMany({

@@ -2,10 +2,12 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { Ban } from "lucide-react"
 import { toast } from "sonner"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { HoldButton } from "@/components/ui/hold-button"
+import { PageHeader } from "@/components/layout/page-header"
+import { StatusPill } from "@/components/ui/status-pill"
 import {
   Table,
   TableBody,
@@ -16,6 +18,7 @@ import {
 } from "@/components/ui/table"
 import { centsToBRL } from "@/lib/money"
 import { PAYMENT_METHOD_LABELS } from "@/lib/constants"
+import { cn } from "@/lib/utils"
 
 type SaleDetailData = {
   id: string
@@ -63,6 +66,17 @@ const DOSE_MODE_LABELS: Record<string, string> = {
   FULL_BOTTLE: "Garrafa inteira",
 }
 
+type ItemRow = {
+  id: string
+  name: string
+  kind: string
+  quantity: number
+  unitPrice: number
+  discount: number
+  total: number
+  note: string | null
+}
+
 export function SaleDetail({
   sale,
   canCancel,
@@ -72,9 +86,43 @@ export function SaleDetail({
 }) {
   const router = useRouter()
   const [cancelling, setCancelling] = useState(false)
+  const cancelled = sale.status === "CANCELLED"
+
+  const rows: ItemRow[] = [
+    ...sale.items.map((i) => ({
+      id: i.id,
+      name: i.product.name,
+      kind: "Produto",
+      quantity: i.quantity,
+      unitPrice: i.unitPrice,
+      discount: i.discount,
+      total: i.total,
+      note: i.note,
+    })),
+    ...sale.doseSaleItems.map((i) => ({
+      id: i.id,
+      name: i.product.name,
+      kind: `${DOSE_MODE_LABELS[i.mode] ?? i.mode} (${i.volumeMl}ml)`,
+      quantity: 1,
+      unitPrice: i.unitPrice,
+      discount: i.discount,
+      total: i.total,
+      note: i.note,
+    })),
+    ...sale.recipeSaleItems.map((i) => ({
+      id: i.id,
+      name: i.recipe.name,
+      kind: "Receita",
+      quantity: i.quantity,
+      unitPrice: i.unitPrice,
+      discount: i.discount,
+      total: i.total,
+      note: i.note,
+    })),
+  ]
 
   async function handleCancel() {
-    if (!confirm("Cancelar esta venda? O estoque dos itens será devolvido.")) return
+    // A confirmação vem do próprio botão, que só dispara depois de segurar.
     setCancelling(true)
     try {
       const res = await fetch(`/api/sales/${sale.id}/cancel`, { method: "POST" })
@@ -91,126 +139,121 @@ export function SaleDetail({
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <Card>
-        <CardHeader className="flex-row items-center justify-between">
-          <CardTitle>
-            Venda #{sale.id.slice(-8)}{" "}
-            <Badge
-              className="ml-2"
-              variant={sale.status === "CANCELLED" ? "destructive" : "default"}
-            >
-              {sale.status === "CANCELLED" ? "Cancelada" : "Concluída"}
-            </Badge>
-          </CardTitle>
-          {canCancel && sale.status !== "CANCELLED" && (
-            <Button variant="destructive" size="sm" disabled={cancelling} onClick={handleCancel}>
-              {cancelling ? "Cancelando..." : "Cancelar venda"}
-            </Button>
-          )}
-        </CardHeader>
-        <CardContent className="flex flex-col gap-1 text-sm text-muted-foreground">
-          <p>Vendedor: {sale.user.name}</p>
-          <p>Data: {new Date(sale.createdAt).toLocaleString("pt-BR")}</p>
-        </CardContent>
-      </Card>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        title={`Venda #${sale.id.slice(-8)}`}
+        description={`${new Date(sale.createdAt).toLocaleString("pt-BR")} · ${sale.user.name}`}
+        backHref="/vendas"
+        actions={
+          <>
+            <StatusPill tone={cancelled ? "danger" : "success"}>
+              {cancelled ? "Cancelada" : "Concluída"}
+            </StatusPill>
+            {canCancel && !cancelled && (
+              <HoldButton
+                className="h-10 rounded-xl px-4"
+                loading={cancelling}
+                holdingLabel="Segure para cancelar…"
+                onConfirm={handleCancel}
+              >
+                <Ban className="size-4" />
+                {cancelling ? "Cancelando..." : "Segure para cancelar"}
+              </HoldButton>
+            )}
+          </>
+        }
+      />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Itens</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Item</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Qtd.</TableHead>
-                <TableHead>Preço unit.</TableHead>
-                <TableHead>Desconto</TableHead>
-                <TableHead>Total</TableHead>
-                <TableHead>Observação</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sale.items.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell>{item.product.name}</TableCell>
-                  <TableCell className="text-muted-foreground">Produto</TableCell>
-                  <TableCell>{item.quantity}</TableCell>
-                  <TableCell>{centsToBRL(item.unitPrice)}</TableCell>
-                  <TableCell>{item.discount ? centsToBRL(item.discount) : "-"}</TableCell>
-                  <TableCell className="font-medium">{centsToBRL(item.total)}</TableCell>
-                  <TableCell className="text-muted-foreground">{item.note ?? "-"}</TableCell>
-                </TableRow>
-              ))}
-              {sale.doseSaleItems.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell>{item.product.name}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {DOSE_MODE_LABELS[item.mode] ?? item.mode} ({item.volumeMl}ml)
-                  </TableCell>
-                  <TableCell>1</TableCell>
-                  <TableCell>{centsToBRL(item.unitPrice)}</TableCell>
-                  <TableCell>{item.discount ? centsToBRL(item.discount) : "-"}</TableCell>
-                  <TableCell className="font-medium">{centsToBRL(item.total)}</TableCell>
-                  <TableCell className="text-muted-foreground">{item.note ?? "-"}</TableCell>
-                </TableRow>
-              ))}
-              {sale.recipeSaleItems.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell>{item.recipe.name}</TableCell>
-                  <TableCell className="text-muted-foreground">Receita</TableCell>
-                  <TableCell>{item.quantity}</TableCell>
-                  <TableCell>{centsToBRL(item.unitPrice)}</TableCell>
-                  <TableCell>{item.discount ? centsToBRL(item.discount) : "-"}</TableCell>
-                  <TableCell className="font-medium">{centsToBRL(item.total)}</TableCell>
-                  <TableCell className="text-muted-foreground">{item.note ?? "-"}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Pagamento</CardTitle>
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+        <Card className="gap-0 p-0">
+          <CardHeader className="p-4">
+            <CardTitle className="text-base">Itens</CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-col gap-1 text-sm">
-            {sale.payments.map((p) => (
-              <div key={p.id} className="flex justify-between">
-                <span className="text-muted-foreground">{PAYMENT_METHOD_LABELS[p.method]}</span>
-                <span>{centsToBRL(p.amount)}</span>
+          <div className="border-t border-border">
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead>Item</TableHead>
+                  <TableHead className="text-right">Qtd.</TableHead>
+                  <TableHead className="text-right">Preço unit.</TableHead>
+                  <TableHead className="text-right">Desconto</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead>Observação</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rows.map((row) => (
+                  <TableRow key={row.id}>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="font-medium">{row.name}</span>
+                        <span className="text-xs text-muted-foreground">{row.kind}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">{row.quantity}</TableCell>
+                    <TableCell className="text-right text-muted-foreground tabular-nums">
+                      {centsToBRL(row.unitPrice)}
+                    </TableCell>
+                    <TableCell className="text-right text-muted-foreground tabular-nums">
+                      {row.discount ? centsToBRL(row.discount) : "—"}
+                    </TableCell>
+                    <TableCell className="text-right font-medium tabular-nums">
+                      {centsToBRL(row.total)}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{row.note ?? "—"}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </Card>
+
+        <div className="flex flex-col gap-4">
+          <Card className={cn(!cancelled && "surface-glow")}>
+            <CardHeader>
+              <CardTitle className="text-base">Resumo</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Subtotal</span>
+                <span className="tabular-nums">{centsToBRL(sale.subtotal)}</span>
               </div>
-            ))}
-          </CardContent>
-        </Card>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Desconto</span>
+                <span className="tabular-nums">{centsToBRL(sale.discount)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Acréscimo</span>
+                <span className="tabular-nums">{centsToBRL(sale.surcharge)}</span>
+              </div>
+              <div className="mt-1 flex items-end justify-between border-t border-border pt-3">
+                <span className="text-muted-foreground">Total</span>
+                <span
+                  className={cn(
+                    "text-3xl font-semibold tracking-tight tabular-nums",
+                    cancelled ? "text-muted-foreground line-through" : "text-primary"
+                  )}
+                >
+                  {centsToBRL(sale.total)}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Resumo</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-1 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Subtotal</span>
-              <span>{centsToBRL(sale.subtotal)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Desconto</span>
-              <span>{centsToBRL(sale.discount)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Acréscimo</span>
-              <span>{centsToBRL(sale.surcharge)}</span>
-            </div>
-            <div className="flex justify-between text-base font-semibold">
-              <span>Total</span>
-              <span>{centsToBRL(sale.total)}</span>
-            </div>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Pagamento</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-2 text-sm">
+              {sale.payments.map((p) => (
+                <div key={p.id} className="flex items-center justify-between rounded-xl bg-secondary/60 px-3 py-2">
+                  <span className="text-muted-foreground">{PAYMENT_METHOD_LABELS[p.method] ?? p.method}</span>
+                  <span className="font-medium tabular-nums">{centsToBRL(p.amount)}</span>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   )

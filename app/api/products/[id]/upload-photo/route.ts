@@ -15,12 +15,29 @@ const MAX_SIZE_BYTES = 5 * 1024 * 1024
 
 type Params = { params: Promise<{ id: string }> }
 
+// O tipo declarado pelo navegador não prova nada: confere os primeiros bytes
+// do arquivo (assinatura) para garantir que é mesmo JPEG, PNG ou WEBP.
+function matchesSignature(bytes: Uint8Array, ext: string) {
+  if (ext === "jpg") return bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff
+  if (ext === "png") {
+    return [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a].every((b, i) => bytes[i] === b)
+  }
+  const ascii = (from: number, to: number) => String.fromCharCode(...bytes.slice(from, to))
+  return ascii(0, 4) === "RIFF" && ascii(8, 12) === "WEBP"
+}
+
 export async function POST(req: NextRequest, { params }: Params) {
   try {
     const session = await auth()
     requireRole(session, ["ADMIN", "MANAGER"])
 
     const { id } = await params
+    // Só confirma que o produto existe; o id vindo da URL nunca entra no nome do arquivo.
+    const exists = await prisma.product.findUnique({ where: { id }, select: { id: true } })
+    if (!exists) {
+      return NextResponse.json({ error: "Produto não encontrado" }, { status: 404 })
+    }
+
     const formData = await req.formData()
     const file = formData.get("file")
 
@@ -38,11 +55,18 @@ export async function POST(req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: "Arquivo muito grande (máx. 5MB)" }, { status: 400 })
     }
 
+    const buffer = Buffer.from(await file.arrayBuffer())
+    if (!matchesSignature(buffer, ext)) {
+      return NextResponse.json(
+        { error: "O conteúdo do arquivo não é uma imagem válida." },
+        { status: 400 }
+      )
+    }
+
     const uploadsDir = path.join(process.cwd(), "public", "uploads")
     await mkdir(uploadsDir, { recursive: true })
 
-    const filename = `${id}-${randomUUID()}.${ext}`
-    const buffer = Buffer.from(await file.arrayBuffer())
+    const filename = `${randomUUID()}.${ext}`
     await writeFile(path.join(uploadsDir, filename), buffer)
 
     const photoUrl = `/uploads/${filename}`

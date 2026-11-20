@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#1A141A">
+<title>Sem conexão | JP Espeto Bar</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100dvh; display: flex; align-items: center; justify-content: center;
+    padding: 24px; text-align: center; background: #1A141A; color: #F6EFE4;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 340px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+  img { width: 96px; height: 96px; border-radius: 24px; }
+  h1 { margin: 8px 0 0; font-size: 24px; letter-spacing: -0.02em; }
+  p { margin: 0; color: #C9AE8C; line-height: 1.5; font-size: 15px; }
+  button {
+    margin-top: 8px; height: 52px; padding: 0 28px; border: 0; border-radius: 999px;
+    background: #F4B315; color: #1A141A; font-size: 16px; font-weight: 600; cursor: pointer;
+  }
+  button:active { transform: scale(0.97); }
+</style>
+</head>
+<body>
+<main>
+  <img src="/logo-sm.jpg" alt="JP Espeto Bar" width="96" height="96">
+  <h1>Sem conexão</h1>
+  <p>Não foi possível falar com o sistema. Confira o Wi-Fi ou os dados do celular e tente de novo.</p>
+  <button type="button" onclick="location.reload()">Tentar novamente</button>
+</main>
+</body>
+</html>

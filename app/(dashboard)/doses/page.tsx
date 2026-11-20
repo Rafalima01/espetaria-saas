@@ -1,8 +1,21 @@
 import Link from "next/link"
-import { GlassWater, Wine, TrendingUp, Percent, AlertTriangle, Droplets } from "lucide-react"
+import {
+  GlassWater,
+  Wine,
+  TrendingUp,
+  Percent,
+  AlertTriangle,
+  Droplets,
+  Calculator,
+  Crown,
+  Package,
+  Martini,
+} from "lucide-react"
 import { getBottleDashboardSummary } from "@/lib/dashboard/getBottleSummary"
 import { SummaryCard } from "@/components/dashboard/summary-card"
 import { Button } from "@/components/ui/button"
+import { PageHeader } from "@/components/layout/page-header"
+import { SectionTitle } from "@/components/layout/section-title"
 import { centsToBRL } from "@/lib/money"
 
 export default async function DosesDashboardPage() {
@@ -10,49 +23,72 @@ export default async function DosesDashboardPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Dashboard de Doses</h1>
-          <p className="text-muted-foreground">Últimos 30 dias</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" render={<Link href="/produtos" />} nativeButton={false}>
-            Produtos
-          </Button>
-          <Button variant="outline" render={<Link href="/receitas" />} nativeButton={false}>
-            Receitas
-          </Button>
-          <Button render={<Link href="/doses/simulador" />} nativeButton={false}>
-            Simulador de lucro
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Doses"
+        description="Desempenho das bebidas vendidas por dose, nos últimos 30 dias"
+        actions={
+          <>
+            <Button
+              variant="outline"
+              className="h-10 rounded-xl px-4"
+              render={<Link href="/produtos" />}
+              nativeButton={false}
+            >
+              <Package className="size-4" />
+              Produtos
+            </Button>
+            <Button
+              variant="outline"
+              className="h-10 rounded-xl px-4"
+              render={<Link href="/receitas" />}
+              nativeButton={false}
+            >
+              <Martini className="size-4" />
+              Receitas
+            </Button>
+            <Button
+              className="h-10 rounded-xl px-4"
+              render={<Link href="/doses/simulador" />}
+              nativeButton={false}
+            >
+              <Calculator className="size-4" />
+              Simulador de lucro
+            </Button>
+          </>
+        }
+      />
 
+      <SectionTitle title="Vendas" description="O que saiu e quanto rendeu" />
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <SummaryCard
+          highlight
+          title="Lucro total (doses)"
+          value={centsToBRL(summary.totalProfit)}
+          icon={TrendingUp}
+        />
         <SummaryCard
           title="Doses vendidas"
           value={String(summary.dosesVendidas)}
           icon={GlassWater}
         />
         <SummaryCard
-          title="Garrafas abertas"
-          value={String(summary.garrafasAbertas)}
-          icon={Wine}
+          title="Ml vendidos"
+          value={`${summary.mlVendidos}ml`}
+          icon={Droplets}
         />
         <SummaryCard
-          title="Garrafas finalizadas"
-          value={String(summary.garrafasFinalizadas)}
+          title="Garrafas vendidas (inteiras)"
+          value={String(summary.garrafasVendidas)}
           icon={Wine}
         />
-        <SummaryCard
-          title="Lucro total (doses)"
-          value={centsToBRL(summary.totalProfit)}
-          icon={TrendingUp}
-        />
+      </div>
+
+      <SectionTitle title="Destaques" description="O que mais performa" />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <SummaryCard
           title="Produto mais lucrativo"
           value={summary.mostProfitableBottle}
-          icon={TrendingUp}
+          icon={Crown}
         />
         <SummaryCard
           title="Dose mais vendida"
@@ -65,25 +101,29 @@ export default async function DosesDashboardPage() {
           icon={Percent}
           hint="Média de doses servidas por garrafa finalizada"
         />
+      </div>
+
+      <SectionTitle title="Garrafas e estoque" description="Situação do que está aberto e guardado" />
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <SummaryCard
-          title="Perdas por desperdício"
-          value={`${summary.wasteVolumeMl}ml / ${summary.wasteUnits} un.`}
-          icon={AlertTriangle}
+          title="Garrafas abertas"
+          value={String(summary.garrafasAbertas)}
+          icon={Wine}
         />
         <SummaryCard
-          title="Ml vendidos"
-          value={`${summary.mlVendidos}ml`}
-          icon={Droplets}
-        />
-        <SummaryCard
-          title="Garrafas vendidas (inteiras)"
-          value={String(summary.garrafasVendidas)}
+          title="Garrafas finalizadas"
+          value={String(summary.garrafasFinalizadas)}
           icon={Wine}
         />
         <SummaryCard
           title="Volume restante em estoque"
           value={`${summary.volumeRestanteTotal}ml`}
           icon={Droplets}
+        />
+        <SummaryCard
+          title="Perdas por desperdício"
+          value={`${summary.wasteVolumeMl}ml / ${summary.wasteUnits} un.`}
+          icon={AlertTriangle}
         />
       </div>
     </div>

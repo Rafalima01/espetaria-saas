@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation"
 import { prisma } from "@/lib/prisma"
+import { PageHeader } from "@/components/layout/page-header"
 import { ProductForm } from "@/components/products/product-form"
 import { DosePriceEditor } from "@/components/products/dose-price-editor"
 
@@ -16,8 +17,8 @@ export default async function EditarProdutoPage({
   if (!product) notFound()
 
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-semibold">Editar produto</h1>
+    <div className="flex flex-col gap-6">
+      <PageHeader title={product.name} description="Editar produto" backHref="/produtos" />
       <ProductForm product={product} />
       {product.productType === "FRACTIONAL" && (
         <DosePriceEditor
