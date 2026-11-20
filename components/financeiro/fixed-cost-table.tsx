@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { Check } from "lucide-react"
 import { toast } from "sonner"
 import {
   Table,
@@ -13,7 +14,8 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+import { Card } from "@/components/ui/card"
+import { StatusPill, type PillTone } from "@/components/ui/status-pill"
 import {
   Select,
   SelectContent,
@@ -22,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { centsToBRL } from "@/lib/money"
+import { cn } from "@/lib/utils"
 import {
   FINANCIAL_ENTRY_STATUS_LABELS,
   PAYMENT_METHOD_LABELS,
@@ -60,11 +63,13 @@ const MONTH_LABELS: Record<string, string> = {
   "12": "Dezembro",
 }
 
-const STATUS_FILTER_LABELS: Record<string, string> = {
-  ALL: "Todos os status",
-  PENDENTE: "Pendente",
-  PAID: "Pago",
-}
+const STATUS_CHIPS: { id: string; label: string }[] = [
+  { id: "ALL", label: "Todos" },
+  { id: "PENDENTE", label: "Pendentes" },
+  { id: "PAID", label: "Pagos" },
+]
+
+const SELECT_TRIGGER = "h-10 w-full rounded-xl bg-background sm:w-44"
 
 export function FixedCostTable({ entries }: { entries: FixedCostEntryRow[] }) {
   const router = useRouter()
@@ -119,104 +124,114 @@ export function FixedCostTable({ entries }: { entries: FixedCostEntryRow[] }) {
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-        <Select
-          value={year}
-          onValueChange={(v) => v && setYear(v)}
-          items={{ ALL: "Todos os anos", ...Object.fromEntries(years.map((y) => [y, y])) }}
-        >
-          <SelectTrigger className="w-full sm:w-36">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">Todos os anos</SelectItem>
-            {years.map((y) => (
-              <SelectItem key={y} value={y}>
-                {y}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select
-          value={month}
-          onValueChange={(v) => v && setMonth(v)}
-          items={{ ALL: "Todos os meses", ...MONTH_LABELS }}
-        >
-          <SelectTrigger className="w-full sm:w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">Todos os meses</SelectItem>
-            {Object.entries(MONTH_LABELS).map(([value, label]) => (
-              <SelectItem key={value} value={value}>
-                {label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select
-          value={category}
-          onValueChange={(v) => v && setCategory(v)}
-          items={{ ALL: "Todas as categorias", ...Object.fromEntries(categories.map((c) => [c, c])) }}
-        >
-          <SelectTrigger className="w-full sm:w-48">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">Todas as categorias</SelectItem>
-            {categories.map((c) => (
-              <SelectItem key={c} value={c}>
-                {c}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={status} onValueChange={(v) => v && setStatus(v)} items={STATUS_FILTER_LABELS}>
-          <SelectTrigger className="w-full sm:w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {Object.entries(STATUS_FILTER_LABELS).map(([value, label]) => (
-              <SelectItem key={value} value={value}>
-                {label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select
-          value={paymentMethod}
-          onValueChange={(v) => v && setPaymentMethod(v)}
-          items={{ ALL: "Todas as formas", ...PAYMENT_METHOD_LABELS }}
-        >
-          <SelectTrigger className="w-full sm:w-44">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">Todas as formas</SelectItem>
-            {Object.entries(PAYMENT_METHOD_LABELS)
-              .filter(([value]) => value !== "FIADO")
-              .map(([value, label]) => (
+    <Card className="gap-0 p-0">
+      <div className="flex flex-col gap-3 p-4">
+        <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Filtro por situação">
+          {STATUS_CHIPS.map((chip) => (
+            <button
+              key={chip.id}
+              type="button"
+              role="tab"
+              aria-selected={status === chip.id}
+              onClick={() => setStatus(chip.id)}
+              className={cn(
+                "rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                status === chip.id
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-secondary text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {chip.label}
+            </button>
+          ))}
+        </div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+          <Select
+            value={year}
+            onValueChange={(v) => v && setYear(v)}
+            items={{ ALL: "Todos os anos", ...Object.fromEntries(years.map((y) => [y, y])) }}
+          >
+            <SelectTrigger className="h-10 w-full rounded-xl bg-background sm:w-36">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Todos os anos</SelectItem>
+              {years.map((y) => (
+                <SelectItem key={y} value={y}>
+                  {y}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={month}
+            onValueChange={(v) => v && setMonth(v)}
+            items={{ ALL: "Todos os meses", ...MONTH_LABELS }}
+          >
+            <SelectTrigger className={SELECT_TRIGGER}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Todos os meses</SelectItem>
+              {Object.entries(MONTH_LABELS).map(([value, label]) => (
                 <SelectItem key={value} value={value}>
                   {label}
                 </SelectItem>
               ))}
-          </SelectContent>
-        </Select>
+            </SelectContent>
+          </Select>
+          <Select
+            value={category}
+            onValueChange={(v) => v && setCategory(v)}
+            items={{ ALL: "Todas as categorias", ...Object.fromEntries(categories.map((c) => [c, c])) }}
+          >
+            <SelectTrigger className={SELECT_TRIGGER}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Todas as categorias</SelectItem>
+              {categories.map((c) => (
+                <SelectItem key={c} value={c}>
+                  {c}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={paymentMethod}
+            onValueChange={(v) => v && setPaymentMethod(v)}
+            items={{ ALL: "Todas as formas", ...PAYMENT_METHOD_LABELS }}
+          >
+            <SelectTrigger className={SELECT_TRIGGER}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Todas as formas</SelectItem>
+              {Object.entries(PAYMENT_METHOD_LABELS)
+                .filter(([value]) => value !== "FIADO")
+                .map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {filtered.length === 0 ? (
-        <p className="text-muted-foreground">Nenhuma despesa fixa encontrada.</p>
+        <p className="border-t border-border p-10 text-center text-sm text-muted-foreground">
+          Nenhuma despesa fixa encontrada.
+        </p>
       ) : (
-        <div className="overflow-x-auto rounded-lg border">
+        <div className="border-t border-border">
           <Table>
             <TableHeader>
-              <TableRow>
+              <TableRow className="hover:bg-transparent">
                 <TableHead>Competência</TableHead>
-                <TableHead>Nome</TableHead>
-                <TableHead>Categoria</TableHead>
+                <TableHead>Despesa</TableHead>
                 <TableHead>Recorrência</TableHead>
-                <TableHead>Valor</TableHead>
+                <TableHead className="text-right">Valor</TableHead>
                 <TableHead>Vencimento</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
@@ -227,40 +242,62 @@ export function FixedCostTable({ entries }: { entries: FixedCostEntryRow[] }) {
                 const overdue =
                   entry.status !== "PAID" && entry.status !== "CANCELLED" && new Date(entry.dueDate) < new Date()
                 const pending = ["OPEN", "PARTIALLY_PAID"].includes(entry.status)
+                const tone: PillTone =
+                  entry.status === "PAID" ? "success" : overdue ? "danger" : entry.status === "CANCELLED" ? "neutral" : "warning"
                 return (
                   <TableRow key={entry.id}>
-                    <TableCell className="whitespace-nowrap text-muted-foreground">
-                      {entry.competencia ?? "-"}
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      {entry.fixedCost ? (
-                        <Link href={`/financeiro/despesas-fixas/${entry.fixedCost.id}/editar`} className="hover:underline">
-                          {entry.fixedCost.name}
-                        </Link>
-                      ) : (
-                        entry.description
-                      )}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{entry.fixedCost?.category ?? "-"}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {entry.fixedCost ? FIXED_COST_RECURRENCE_LABELS[entry.fixedCost.recurrence] ?? entry.fixedCost.recurrence : "-"}
-                    </TableCell>
-                    <TableCell>{centsToBRL(entry.amount)}</TableCell>
-                    <TableCell className={overdue ? "font-medium text-destructive" : "text-muted-foreground"}>
-                      {new Date(entry.dueDate).toLocaleDateString("pt-BR")}
-                      {overdue && " (vencido)"}
+                    <TableCell className="text-muted-foreground tabular-nums">
+                      {entry.competencia ?? "—"}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={entry.status === "PAID" ? "default" : overdue ? "destructive" : "secondary"}>
-                        {FINANCIAL_ENTRY_STATUS_LABELS[entry.status] ?? entry.status}
-                      </Badge>
+                      <div className="flex flex-col">
+                        {entry.fixedCost ? (
+                          <Link
+                            href={`/financeiro/despesas-fixas/${entry.fixedCost.id}/editar`}
+                            className="font-medium underline-offset-4 hover:underline"
+                          >
+                            {entry.fixedCost.name}
+                          </Link>
+                        ) : (
+                          <span className="font-medium">{entry.description}</span>
+                        )}
+                        <span className="text-xs text-muted-foreground">
+                          {entry.fixedCost?.category ?? "—"}
+                        </span>
+                      </div>
                     </TableCell>
-                    <TableCell className="text-right">
-                      {pending && (
-                        <Button size="sm" disabled={payingId === entry.id} onClick={() => handleMarkPaid(entry)}>
-                          {payingId === entry.id ? "Salvando..." : "Marcar como pago"}
-                        </Button>
-                      )}
+                    <TableCell className="text-muted-foreground">
+                      {entry.fixedCost
+                        ? FIXED_COST_RECURRENCE_LABELS[entry.fixedCost.recurrence] ?? entry.fixedCost.recurrence
+                        : "—"}
+                    </TableCell>
+                    <TableCell className="text-right font-medium tabular-nums">
+                      {centsToBRL(entry.amount)}
+                    </TableCell>
+                    <TableCell className={cn(overdue ? "font-medium text-destructive" : "text-muted-foreground")}>
+                      {new Date(entry.dueDate).toLocaleDateString("pt-BR")}
+                    </TableCell>
+                    <TableCell>
+                      <StatusPill tone={tone}>
+                        {overdue && entry.status !== "PAID"
+                          ? "Vencido"
+                          : FINANCIAL_ENTRY_STATUS_LABELS[entry.status] ?? entry.status}
+                      </StatusPill>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex justify-end">
+                        {pending && (
+                          <Button
+                            size="sm"
+                            className="h-8 rounded-lg px-3"
+                            disabled={payingId === entry.id}
+                            onClick={() => handleMarkPaid(entry)}
+                          >
+                            <Check className="size-3.5" />
+                            {payingId === entry.id ? "Salvando..." : "Marcar como pago"}
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 )
@@ -269,6 +306,6 @@ export function FixedCostTable({ entries }: { entries: FixedCostEntryRow[] }) {
           </Table>
         </div>
       )}
-    </div>
+    </Card>
   )
 }

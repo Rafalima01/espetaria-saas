@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation"
 import { prisma } from "@/lib/prisma"
+import { PageHeader } from "@/components/layout/page-header"
 import { CreditCustomerForm } from "@/components/fiado/credit-customer-form"
 
 export default async function EditarClienteFiadoPage({
@@ -12,8 +13,12 @@ export default async function EditarClienteFiadoPage({
   if (!customer) notFound()
 
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-semibold">Editar cliente</h1>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        title={customer.name}
+        description="Editar cliente"
+        backHref={`/fiado/clientes/${customer.id}`}
+      />
       <CreditCustomerForm customer={customer} />
     </div>
   )

@@ -1,10 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { CatalogSearch } from "@/components/pdv/catalog-search"
 import { Cart } from "@/components/pdv/cart"
+import { SaleSuccess } from "@/components/pdv/sale-success"
 import { PaymentSplitDialog, type PaymentRow } from "@/components/pdv/payment-split-dialog"
 import { useCart } from "@/lib/pdv/use-cart"
 import { brlToCents } from "@/lib/money"
@@ -32,6 +33,23 @@ export function PdvClient({
   const { state, dispatch, subtotal, total } = useCart()
   const [paymentOpen, setPaymentOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  // Total da última venda concluída; enquanto existir, o check de sucesso aparece.
+  const [completedTotal, setCompletedTotal] = useState<number | null>(null)
+  const successTimer = useRef<number | undefined>(undefined)
+  const hasItems = state.lines.length > 0
+
+  useEffect(() => () => window.clearTimeout(successTimer.current), [])
+
+  // F2 abre o pagamento, de qualquer lugar da tela, quando há itens no carrinho.
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key !== "F2" || !hasItems || document.querySelector("[role=dialog]")) return
+      e.preventDefault()
+      setPaymentOpen(true)
+    }
+    window.addEventListener("keydown", onKeyDown)
+    return () => window.removeEventListener("keydown", onKeyDown)
+  }, [hasItems])
 
   async function handleConfirmPayment(
     payments: PaymentRow[],
@@ -87,6 +105,9 @@ export function PdvClient({
         return
       }
 
+      setCompletedTotal(total)
+      window.clearTimeout(successTimer.current)
+      successTimer.current = window.setTimeout(() => setCompletedTotal(null), 1800)
       toast.success("Venda finalizada com sucesso")
       for (const w of data.lowStockWarnings ?? []) {
         toast.warning(
@@ -110,6 +131,10 @@ export function PdvClient({
         onAddDose={(dose) => dispatch({ type: "ADD_DOSE", dose })}
         onAddRecipe={(recipe) => dispatch({ type: "ADD_RECIPE", recipe })}
       />
+      <div className="relative min-h-0 lg:h-full">
+      {completedTotal !== null && (
+        <SaleSuccess total={completedTotal} onDone={() => setCompletedTotal(null)} />
+      )}
       <Cart
         lines={state.lines}
         saleDiscount={state.saleDiscount}
@@ -130,6 +155,7 @@ export function PdvClient({
         }
         onFinalize={() => setPaymentOpen(true)}
       />
+      </div>
       <PaymentSplitDialog
         open={paymentOpen}
         onOpenChange={setPaymentOpen}

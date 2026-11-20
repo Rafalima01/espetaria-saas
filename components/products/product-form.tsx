@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation"
 import { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
+import { ImagePlus } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -17,10 +18,55 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { PRODUCT_CATEGORIES, PRODUCT_TYPE_LABELS } from "@/lib/constants"
 import { brlToCents } from "@/lib/money"
+import { cn } from "@/lib/utils"
 import type { Product } from "@/lib/generated/prisma/client"
+
+const FIELD_INPUT = "h-10 rounded-xl bg-background"
+
+function Field({
+  label,
+  htmlFor,
+  hint,
+  className,
+  children,
+}: {
+  label: string
+  htmlFor: string
+  hint?: React.ReactNode
+  className?: string
+  children: React.ReactNode
+}) {
+  return (
+    <div className={cn("flex flex-col gap-2", className)}>
+      <Label htmlFor={htmlFor}>{label}</Label>
+      {children}
+      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+    </div>
+  )
+}
+
+function Section({
+  title,
+  description,
+  children,
+}: {
+  title: string
+  description?: string
+  children: React.ReactNode
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">{title}</CardTitle>
+        {description && <CardDescription>{description}</CardDescription>}
+      </CardHeader>
+      <CardContent className="grid gap-4 sm:grid-cols-2">{children}</CardContent>
+    </Card>
+  )
+}
 
 export function ProductForm({ product }: { product?: Product }) {
   const router = useRouter()
@@ -31,6 +77,18 @@ export function ProductForm({ product }: { product?: Product }) {
     product?.photoUrl ?? null
   )
   const [productType, setProductType] = useState(product?.productType ?? "SIMPLE")
+  const [purchaseText, setPurchaseText] = useState(
+    product ? (product.purchasePrice / 100).toFixed(2).replace(".", ",") : ""
+  )
+  const [saleText, setSaleText] = useState(
+    product ? (product.salePrice / 100).toFixed(2).replace(".", ",") : ""
+  )
+  const purchaseCents = brlToCents(purchaseText || "0")
+  const saleCents = brlToCents(saleText || "0")
+  const marginPct =
+    productType === "SIMPLE" && saleCents > 0
+      ? Math.round(((saleCents - purchaseCents) / saleCents) * 100)
+      : null
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -98,18 +156,19 @@ export function ProductForm({ product }: { product?: Product }) {
   }
 
   return (
-    <Card>
-      <CardContent className="pt-6">
-        <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2">
-          <div className="flex flex-col gap-2 sm:col-span-2">
-            <Label htmlFor="name">Nome</Label>
-            <Input id="name" name="name" defaultValue={product?.name} required />
-          </div>
+    <form
+      onSubmit={handleSubmit}
+      className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start"
+    >
+      <div className="flex min-w-0 flex-col gap-4">
+        <Section title="Informações básicas" description="Como o produto aparece no PDV e nos relatórios">
+          <Field label="Nome" htmlFor="name" className="sm:col-span-2">
+            <Input id="name" name="name" className={FIELD_INPUT} defaultValue={product?.name} required />
+          </Field>
 
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="category">Categoria</Label>
+          <Field label="Categoria" htmlFor="category">
             <Select name="category" defaultValue={product?.category} required>
-              <SelectTrigger id="category" className="w-full">
+              <SelectTrigger id="category" className="h-10 w-full rounded-xl">
                 <SelectValue placeholder="Selecione" />
               </SelectTrigger>
               <SelectContent>
@@ -120,17 +179,16 @@ export function ProductForm({ product }: { product?: Product }) {
                 ))}
               </SelectContent>
             </Select>
-          </div>
+          </Field>
 
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="productType">Tipo do Produto</Label>
+          <Field label="Tipo do produto" htmlFor="productType">
             <Select
               value={productType}
               onValueChange={(v) => v && setProductType(v as "SIMPLE" | "FRACTIONAL")}
               items={PRODUCT_TYPE_LABELS}
               required
             >
-              <SelectTrigger id="productType" className="w-full">
+              <SelectTrigger id="productType" className="h-10 w-full rounded-xl">
                 <SelectValue placeholder="Selecione" />
               </SelectTrigger>
               <SelectContent>
@@ -141,172 +199,227 @@ export function ProductForm({ product }: { product?: Product }) {
                 ))}
               </SelectContent>
             </Select>
-          </div>
+          </Field>
 
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="supplier">Fornecedor</Label>
-            <Input id="supplier" name="supplier" defaultValue={product?.supplier ?? ""} />
-          </div>
+          <Field label="Fornecedor" htmlFor="supplier">
+            <Input id="supplier" name="supplier" className={FIELD_INPUT} defaultValue={product?.supplier ?? ""} />
+          </Field>
 
-          {productType === "FRACTIONAL" && (
-            <>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="volumeMl">Volume da garrafa/unidade (ml)</Label>
-                <Input
-                  id="volumeMl"
-                  name="volumeMl"
-                  type="number"
-                  min={1}
-                  defaultValue={product?.volumeMl ?? ""}
-                  required
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="fullBottleSalePrice">
-                  Preço da unidade inteira (R$, opcional)
-                </Label>
-                <Input
-                  id="fullBottleSalePrice"
-                  name="fullBottleSalePrice"
-                  inputMode="decimal"
-                  placeholder="0,00 (deixe vazio p/ não vender inteira)"
-                  defaultValue={
-                    product?.fullBottleSalePrice
-                      ? (product.fullBottleSalePrice / 100).toFixed(2).replace(".", ",")
-                      : ""
-                  }
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="defaultDoseMl">Dose padrão (ml)</Label>
-                <Input
-                  id="defaultDoseMl"
-                  name="defaultDoseMl"
-                  type="number"
-                  min={1}
-                  defaultValue={product?.defaultDoseMl ?? ""}
-                  required
-                />
-                <p className="text-xs text-muted-foreground">
-                  Usada só para estimar &quot;doses restantes&quot; no Estoque/Dashboard.
-                </p>
-              </div>
-            </>
-          )}
+          <Field label="Código" htmlFor="code">
+            <Input id="code" name="code" className={FIELD_INPUT} defaultValue={product?.code ?? ""} />
+          </Field>
 
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="purchasePrice">Preço de compra (R$)</Label>
+          <Field label="Código de barras" htmlFor="barcode" className="sm:col-span-2">
+            <Input id="barcode" name="barcode" className={FIELD_INPUT} defaultValue={product?.barcode ?? ""} />
+          </Field>
+
+          <Field label="Descrição" htmlFor="description" className="sm:col-span-2">
+            <Textarea
+              id="description"
+              name="description"
+              className="min-h-24 rounded-xl bg-background"
+              defaultValue={product?.description ?? ""}
+            />
+          </Field>
+        </Section>
+
+        {productType === "FRACTIONAL" && (
+          <Section
+            title="Bebida fracionada"
+            description="Controle em ml: cada garrafa aberta vira uma unidade rastreável"
+          >
+            <Field label="Volume da garrafa/unidade (ml)" htmlFor="volumeMl">
+              <Input
+                id="volumeMl"
+                name="volumeMl"
+                type="number"
+                min={1}
+                className={FIELD_INPUT}
+                defaultValue={product?.volumeMl ?? ""}
+                required
+              />
+            </Field>
+            <Field label="Preço da unidade inteira (R$, opcional)" htmlFor="fullBottleSalePrice">
+              <Input
+                id="fullBottleSalePrice"
+                name="fullBottleSalePrice"
+                inputMode="decimal"
+                className={FIELD_INPUT}
+                placeholder="0,00 (vazio = não vende inteira)"
+                defaultValue={
+                  product?.fullBottleSalePrice
+                    ? (product.fullBottleSalePrice / 100).toFixed(2).replace(".", ",")
+                    : ""
+                }
+              />
+            </Field>
+            <Field
+              label="Dose padrão (ml)"
+              htmlFor="defaultDoseMl"
+              hint='Usada só para estimar "doses restantes" no Estoque e no Dashboard.'
+            >
+              <Input
+                id="defaultDoseMl"
+                name="defaultDoseMl"
+                type="number"
+                min={1}
+                className={FIELD_INPUT}
+                defaultValue={product?.defaultDoseMl ?? ""}
+                required
+              />
+            </Field>
+          </Section>
+        )}
+
+        <Section title="Preços e estoque">
+          <Field label="Preço de compra (R$)" htmlFor="purchasePrice">
             <Input
               id="purchasePrice"
               name="purchasePrice"
               inputMode="decimal"
-              defaultValue={
-                product ? (product.purchasePrice / 100).toFixed(2).replace(".", ",") : ""
-              }
+              className={FIELD_INPUT}
+              value={purchaseText}
+              onChange={(e) => setPurchaseText(e.target.value)}
               placeholder="0,00"
               required
             />
-          </div>
+          </Field>
 
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="salePrice">Preço de venda (R$)</Label>
+          <Field
+            label="Preço de venda (R$)"
+            htmlFor="salePrice"
+            hint={
+              marginPct !== null ? (
+                <span className={marginPct < 0 ? "text-destructive" : "text-primary"}>
+                  Margem de {marginPct}% por unidade
+                </span>
+              ) : undefined
+            }
+          >
             <Input
               id="salePrice"
               name="salePrice"
               inputMode="decimal"
-              defaultValue={
-                product ? (product.salePrice / 100).toFixed(2).replace(".", ",") : ""
-              }
+              className={FIELD_INPUT}
+              value={saleText}
+              onChange={(e) => setSaleText(e.target.value)}
               placeholder="0,00"
               required
             />
-          </div>
+          </Field>
 
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="stock">Estoque atual</Label>
-            {isEdit ? (
-              <>
-                <Input id="stock" value={product.stock} disabled />
-                <p className="text-xs text-muted-foreground">
-                  Não editável aqui —{" "}
+          <Field
+            label="Estoque atual"
+            htmlFor="stock"
+            hint={
+              isEdit ? (
+                <>
+                  Não editável aqui:{" "}
                   <Link href="/estoque" className="underline">
                     use Reabastecer Estoque
                   </Link>{" "}
                   para alterar.
-                </p>
-              </>
+                </>
+              ) : undefined
+            }
+          >
+            {isEdit ? (
+              <Input id="stock" className={FIELD_INPUT} value={product.stock} disabled />
             ) : (
-              <Input id="stock" name="stock" type="number" min={0} defaultValue={0} required />
+              <Input
+                id="stock"
+                name="stock"
+                type="number"
+                min={0}
+                className={FIELD_INPUT}
+                defaultValue={0}
+                required
+              />
             )}
-          </div>
+          </Field>
 
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="minStock">Estoque mínimo</Label>
+          <Field label="Estoque mínimo" htmlFor="minStock">
             <Input
               id="minStock"
               name="minStock"
               type="number"
               min={0}
+              className={FIELD_INPUT}
               defaultValue={product?.minStock ?? 0}
               required
             />
-          </div>
+          </Field>
+        </Section>
+      </div>
 
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="code">Código</Label>
-            <Input id="code" name="code" defaultValue={product?.code ?? ""} />
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="barcode">Código de barras</Label>
-            <Input id="barcode" name="barcode" defaultValue={product?.barcode ?? ""} />
-          </div>
-
-          <div className="flex flex-col gap-2 sm:col-span-2">
-            <Label htmlFor="description">Descrição</Label>
-            <Textarea id="description" name="description" defaultValue={product?.description ?? ""} />
-          </div>
-
-          <div className="flex flex-col gap-2 sm:col-span-2">
-            <Label htmlFor="photo">Foto</Label>
-            {photoPreview && (
-              <Image
-                src={photoPreview}
-                alt="Foto do produto"
-                width={96}
-                height={96}
-                className="size-24 rounded-md border object-cover"
-                unoptimized
-              />
-            )}
+      <div className="flex flex-col gap-4 lg:sticky lg:top-0">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Foto</CardTitle>
+            <CardDescription>JPEG, PNG ou WEBP, até 5 MB</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            <label
+              htmlFor="photo"
+              className="group flex aspect-square cursor-pointer items-center justify-center overflow-hidden rounded-2xl border border-dashed border-border bg-secondary/40 transition-colors hover:border-primary/60"
+            >
+              {photoPreview ? (
+                <Image
+                  src={photoPreview}
+                  alt="Foto do produto"
+                  width={288}
+                  height={288}
+                  className="size-full object-cover"
+                  unoptimized
+                />
+              ) : (
+                <span className="flex flex-col items-center gap-2 text-sm text-muted-foreground group-hover:text-foreground">
+                  <ImagePlus className="size-6" />
+                  Escolher imagem
+                </span>
+              )}
+            </label>
             <Input
               id="photo"
               name="photo"
               type="file"
               accept="image/jpeg,image/png,image/webp"
+              className="h-10 rounded-xl bg-background"
               onChange={(e) => {
                 const file = e.target.files?.[0] ?? null
                 setPhotoFile(file)
                 if (file) setPhotoPreview(URL.createObjectURL(file))
               }}
             />
-          </div>
+          </CardContent>
+        </Card>
 
-          <div className="flex items-center gap-2 sm:col-span-2">
-            <Checkbox id="active" name="active" defaultChecked={product?.active ?? true} />
-            <Label htmlFor="active">Produto ativo</Label>
-          </div>
-
-          <div className="flex gap-2 sm:col-span-2">
-            <Button type="submit" disabled={submitting}>
-              {submitting ? "Salvando..." : isEdit ? "Salvar alterações" : "Criar produto"}
-            </Button>
-            <Button type="button" variant="outline" onClick={() => router.push("/produtos")}>
-              Cancelar
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+        <Card>
+          <CardContent className="flex flex-col gap-4">
+            <div className="flex items-center gap-2">
+              <Checkbox id="active" name="active" defaultChecked={product?.active ?? true} />
+              <Label htmlFor="active">Produto ativo</Label>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Button
+                type="submit"
+                loading={submitting}
+                className="h-11 rounded-xl text-base font-semibold"
+              >
+                {submitting ? "Salvando..." : isEdit ? "Salvar alterações" : "Criar produto"}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                className="h-10 rounded-xl"
+                onClick={() => router.push("/produtos")}
+              >
+                Cancelar
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </form>
   )
 }

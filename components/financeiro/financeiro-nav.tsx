@@ -5,8 +5,8 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 
 const TABS = [
-  { title: "Despesas Fixas", href: "/financeiro/despesas-fixas" },
-  { title: "Fluxo de Caixa", href: "/financeiro/fluxo-de-caixa" },
+  { title: "Despesas fixas", href: "/financeiro/despesas-fixas" },
+  { title: "Fluxo de caixa", href: "/financeiro/fluxo-de-caixa" },
   { title: "Relatórios", href: "/financeiro/despesas-fixas/relatorios" },
 ]
 
@@ -14,18 +14,22 @@ export function FinanceiroNav() {
   const pathname = usePathname()
 
   return (
-    <nav className="flex gap-1 border-b">
+    <nav
+      aria-label="Seções do financeiro"
+      className="flex w-fit max-w-full gap-1 overflow-x-auto rounded-full bg-secondary p-1"
+    >
       {TABS.map((tab) => {
         const active = pathname === tab.href
         return (
           <Link
             key={tab.href}
             href={tab.href}
+            aria-current={active ? "page" : undefined}
             className={cn(
-              "border-b-2 px-3 py-2 text-sm font-medium transition-colors",
+              "rounded-full px-4 py-1.5 text-sm font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-2 focus-visible:ring-primary",
               active
-                ? "border-primary text-foreground"
-                : "border-transparent text-muted-foreground hover:text-foreground"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground"
             )}
           >
             {tab.title}

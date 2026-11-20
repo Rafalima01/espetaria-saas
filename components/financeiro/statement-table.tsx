@@ -6,9 +6,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
+import { Card } from "@/components/ui/card"
+import { StatusPill, type PillTone } from "@/components/ui/status-pill"
 import { centsToBRL } from "@/lib/money"
 import { FINANCIAL_ENTRY_STATUS_LABELS } from "@/lib/constants"
+import { cn } from "@/lib/utils"
 
 type Entry = {
   id: string
@@ -20,27 +22,31 @@ type Entry = {
   payments: { id: string; amount: number; createdAt: Date }[]
 }
 
-const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive"> = {
-  OPEN: "secondary",
-  PARTIALLY_PAID: "secondary",
-  PAID: "default",
-  CANCELLED: "destructive",
+const STATUS_TONE: Record<string, PillTone> = {
+  OPEN: "warning",
+  PARTIALLY_PAID: "primary",
+  PAID: "success",
+  CANCELLED: "danger",
 }
 
 export function StatementTable({ entries }: { entries: Entry[] }) {
   if (entries.length === 0) {
-    return <p className="text-muted-foreground">Nenhuma movimentação registrada.</p>
+    return (
+      <Card className="p-10 text-center text-sm text-muted-foreground">
+        Nenhuma movimentação registrada.
+      </Card>
+    )
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg border">
+    <Card className="gap-0 p-0">
       <Table>
         <TableHeader>
-          <TableRow>
+          <TableRow className="hover:bg-transparent">
             <TableHead>Data</TableHead>
             <TableHead>Descrição</TableHead>
-            <TableHead>Valor</TableHead>
-            <TableHead>Pago</TableHead>
+            <TableHead className="text-right">Valor</TableHead>
+            <TableHead className="text-right">Pago</TableHead>
             <TableHead>Vencimento</TableHead>
             <TableHead>Status</TableHead>
           </TableRow>
@@ -54,26 +60,32 @@ export function StatementTable({ entries }: { entries: Entry[] }) {
               new Date(entry.dueDate) < new Date()
             return (
               <TableRow key={entry.id}>
-                <TableCell className="whitespace-nowrap text-muted-foreground">
+                <TableCell className="text-muted-foreground">
                   {new Date(entry.createdAt).toLocaleDateString("pt-BR")}
                 </TableCell>
                 <TableCell>{entry.description}</TableCell>
-                <TableCell className="font-medium">{centsToBRL(entry.amount)}</TableCell>
-                <TableCell className="text-muted-foreground">{centsToBRL(paid)}</TableCell>
-                <TableCell className={overdue ? "font-medium text-destructive" : "text-muted-foreground"}>
+                <TableCell className="text-right font-medium tabular-nums">
+                  {centsToBRL(entry.amount)}
+                </TableCell>
+                <TableCell className="text-right text-muted-foreground tabular-nums">
+                  {centsToBRL(paid)}
+                </TableCell>
+                <TableCell
+                  className={cn(overdue ? "font-medium text-destructive" : "text-muted-foreground")}
+                >
                   {new Date(entry.dueDate).toLocaleDateString("pt-BR")}
                   {overdue && " (vencido)"}
                 </TableCell>
                 <TableCell>
-                  <Badge variant={STATUS_VARIANT[entry.status] ?? "secondary"}>
+                  <StatusPill tone={STATUS_TONE[entry.status] ?? "neutral"}>
                     {FINANCIAL_ENTRY_STATUS_LABELS[entry.status] ?? entry.status}
-                  </Badge>
+                  </StatusPill>
                 </TableCell>
               </TableRow>
             )
           })}
         </TableBody>
       </Table>
-    </div>
+    </Card>
   )
 }

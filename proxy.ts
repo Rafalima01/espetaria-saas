@@ -42,5 +42,9 @@ export default auth((req) => {
 })
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|uploads).*)"],
+  // Public assets (logo, icon) must skip the auth proxy: the login screen shows
+  // them to signed-out visitors and the image optimizer fetches them without cookies.
+  matcher: [
+    "/((?!api|_next/static|_next/image|favicon.ico|icon.png|apple-icon.png|icons/|logo|manifest.webmanifest|sw.js|offline.html|uploads).*)",
+  ],
 }

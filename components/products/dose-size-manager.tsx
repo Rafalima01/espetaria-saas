@@ -2,11 +2,12 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { Plus } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { cn } from "@/lib/utils"
 import type { DoseSize } from "@/lib/generated/prisma/client"
 
 export function DoseSizeManager({ doseSizes }: { doseSizes: DoseSize[] }) {
@@ -54,32 +55,47 @@ export function DoseSizeManager({ doseSizes }: { doseSizes: DoseSize[] }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Tamanhos de dose</CardTitle>
+        <CardTitle className="text-base">Tamanhos de dose</CardTitle>
+        <CardDescription>Clique em um tamanho para ativar ou desativar</CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col gap-3">
+      <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex flex-wrap gap-2">
           {doseSizes.map((ds) => (
-            <Badge
+            <button
               key={ds.id}
-              variant={ds.active ? "default" : "secondary"}
-              className="cursor-pointer"
+              type="button"
+              aria-pressed={ds.active}
               onClick={() => toggleActive(ds)}
+              className={cn(
+                "rounded-full px-3.5 py-1.5 text-sm font-medium tabular-nums transition-colors outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                ds.active
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-secondary text-muted-foreground line-through hover:text-foreground"
+              )}
             >
-              {ds.volumeMl}ml {!ds.active && "(inativo)"}
-            </Badge>
+              {ds.volumeMl}ml
+            </button>
           ))}
           {doseSizes.length === 0 && (
             <p className="text-sm text-muted-foreground">Nenhum tamanho cadastrado.</p>
           )}
         </div>
         <form onSubmit={handleAdd} className="flex items-end gap-2">
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1.5">
             <label htmlFor="volumeMl" className="text-xs text-muted-foreground">
               Novo tamanho (ml)
             </label>
-            <Input id="volumeMl" name="volumeMl" type="number" min={1} className="w-32" required />
+            <Input
+              id="volumeMl"
+              name="volumeMl"
+              type="number"
+              min={1}
+              className="h-10 w-32 rounded-xl bg-background"
+              required
+            />
           </div>
-          <Button type="submit" size="sm" disabled={submitting}>
+          <Button type="submit" loading={submitting} className="h-10 rounded-xl px-4">
+            <Plus className="size-4" />
             Adicionar
           </Button>
         </form>

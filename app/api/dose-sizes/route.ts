@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { doseSizeSchema } from "@/lib/validations/dose"
-import { requireRole, forbiddenResponse, ForbiddenError } from "@/lib/auth-guards"
+import { requireRole, forbiddenResponse, ForbiddenError, denyUnlessRole } from "@/lib/auth-guards"
 
 export async function GET() {
   const session = await auth()
-  if (!session?.user) return forbiddenResponse("Não autenticado")
+  const denied = denyUnlessRole(session, ["ADMIN","MANAGER","CASHIER","WAITER"])
+  if (denied) return denied
 
   const doseSizes = await prisma.doseSize.findMany({ orderBy: { volumeMl: "asc" } })
   return NextResponse.json(doseSizes)

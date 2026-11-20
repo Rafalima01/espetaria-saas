@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { PackagePlus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { RestockDialog } from "@/components/stock/restock-dialog"
 
@@ -15,7 +16,10 @@ export function ProductRestockButton({
 
   return (
     <>
-      <Button onClick={() => setOpen(true)}>Reabastecer</Button>
+      <Button className="h-10 rounded-xl px-4" onClick={() => setOpen(true)}>
+        <PackagePlus className="size-4" />
+        Reabastecer
+      </Button>
       <RestockDialog
         open={open}
         onOpenChange={setOpen}

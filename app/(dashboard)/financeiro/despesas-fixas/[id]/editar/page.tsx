@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation"
 import { prisma } from "@/lib/prisma"
+import { PageHeader } from "@/components/layout/page-header"
 import { FixedCostForm } from "@/components/financeiro/fixed-cost-form"
 import { FIXED_COST_CATEGORIES } from "@/lib/constants"
 
@@ -20,8 +21,12 @@ export default async function EditarCustoFixoPage({
   ).sort()
 
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-semibold">Editar custo fixo</h1>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        title={fixedCost.name}
+        description="Editar custo fixo"
+        backHref="/financeiro/despesas-fixas"
+      />
       <FixedCostForm fixedCost={fixedCost} categories={categories} />
     </div>
   )

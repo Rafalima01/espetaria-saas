@@ -17,5 +17,7 @@ declare module "next-auth/jwt" {
   interface JWT {
     id: string
     role: string
+    /** Quando o usuário foi conferido no banco pela última vez (ms). */
+    checkedAt?: number
   }
 }

@@ -7,16 +7,34 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { brlToCents } from "@/lib/money"
+import { cn } from "@/lib/utils"
 import type { CreditCustomer } from "@/lib/generated/prisma/client"
+
+const FIELD_INPUT = "h-10 rounded-xl bg-background"
+
+function Field({
+  label,
+  htmlFor,
+  hint,
+  className,
+  children,
+}: {
+  label: string
+  htmlFor: string
+  hint?: string
+  className?: string
+  children: React.ReactNode
+}) {
+  return (
+    <div className={cn("flex flex-col gap-2", className)}>
+      <Label htmlFor={htmlFor}>{label}</Label>
+      {children}
+      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+    </div>
+  )
+}
 
 export function CreditCustomerForm({ customer }: { customer?: CreditCustomer }) {
   const router = useRouter()
@@ -61,74 +79,129 @@ export function CreditCustomerForm({ customer }: { customer?: CreditCustomer }) 
   }
 
   return (
-    <Card>
-      <CardContent className="pt-6">
-        <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2">
-          <div className="flex flex-col gap-2 sm:col-span-2">
-            <Label htmlFor="name">Nome</Label>
-            <Input id="name" name="name" defaultValue={customer?.name} required />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="phone">Telefone</Label>
-            <Input id="phone" name="phone" defaultValue={customer?.phone} required />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="whatsapp">WhatsApp</Label>
-            <Input id="whatsapp" name="whatsapp" defaultValue={customer?.whatsapp ?? ""} />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="cpf">CPF</Label>
-            <Input id="cpf" name="cpf" defaultValue={customer?.cpf ?? ""} />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="creditLimit">Limite de crédito (R$)</Label>
+    <form
+      onSubmit={handleSubmit}
+      className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start"
+    >
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Dados do cliente</CardTitle>
+          <CardDescription>Contato e informações para cobrança</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4 sm:grid-cols-2">
+          <Field label="Nome" htmlFor="name" className="sm:col-span-2">
+            <Input id="name" name="name" className={FIELD_INPUT} defaultValue={customer?.name} required />
+          </Field>
+          <Field label="Telefone" htmlFor="phone">
+            <Input id="phone" name="phone" className={FIELD_INPUT} defaultValue={customer?.phone} required />
+          </Field>
+          <Field label="WhatsApp" htmlFor="whatsapp">
             <Input
-              id="creditLimit"
-              name="creditLimit"
-              inputMode="decimal"
-              defaultValue={
-                customer ? (customer.creditLimit / 100).toFixed(2).replace(".", ",") : ""
-              }
-              placeholder="0,00"
-              required
+              id="whatsapp"
+              name="whatsapp"
+              className={FIELD_INPUT}
+              defaultValue={customer?.whatsapp ?? ""}
             />
-          </div>
-          <div className="flex flex-col gap-2 sm:col-span-2">
-            <Label htmlFor="address">Endereço</Label>
-            <Input id="address" name="address" defaultValue={customer?.address ?? ""} />
-          </div>
-          <div className="flex flex-col gap-2 sm:col-span-2">
-            <Label htmlFor="notes">Observações</Label>
-            <Textarea id="notes" name="notes" defaultValue={customer?.notes ?? ""} />
-          </div>
-          {isEdit && (
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="status">Status</Label>
-              <Select
-                value={status}
-                onValueChange={(v) => setStatus((v as "ACTIVE" | "BLOCKED") ?? "ACTIVE")}
-                items={{ ACTIVE: "Ativo", BLOCKED: "Bloqueado" }}
-              >
-                <SelectTrigger id="status" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ACTIVE">Ativo</SelectItem>
-                  <SelectItem value="BLOCKED">Bloqueado</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-          <div className="flex gap-2 sm:col-span-2">
-            <Button type="submit" disabled={submitting}>
+          </Field>
+          <Field label="CPF" htmlFor="cpf">
+            <Input id="cpf" name="cpf" className={FIELD_INPUT} defaultValue={customer?.cpf ?? ""} />
+          </Field>
+          <Field label="Endereço" htmlFor="address">
+            <Input id="address" name="address" className={FIELD_INPUT} defaultValue={customer?.address ?? ""} />
+          </Field>
+          <Field label="Observações" htmlFor="notes" className="sm:col-span-2">
+            <Textarea
+              id="notes"
+              name="notes"
+              className="min-h-24 rounded-xl bg-background"
+              defaultValue={customer?.notes ?? ""}
+            />
+          </Field>
+        </CardContent>
+      </Card>
+
+      <div className="flex flex-col gap-4 lg:sticky lg:top-0">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Crédito</CardTitle>
+            <CardDescription>Quanto este cliente pode dever</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            <Field
+              label="Limite de crédito (R$)"
+              htmlFor="creditLimit"
+              hint="Passar do limite só gera um aviso no PDV; não impede a venda."
+            >
+              <Input
+                id="creditLimit"
+                name="creditLimit"
+                inputMode="decimal"
+                className={FIELD_INPUT}
+                defaultValue={
+                  customer ? (customer.creditLimit / 100).toFixed(2).replace(".", ",") : ""
+                }
+                placeholder="0,00"
+                required
+              />
+            </Field>
+
+            {isEdit && (
+              <div className="flex flex-col gap-2">
+                <Label id="status-label">Status</Label>
+                <div className="flex gap-1.5" role="radiogroup" aria-labelledby="status-label">
+                  {(
+                    [
+                      { id: "ACTIVE", label: "Ativo" },
+                      { id: "BLOCKED", label: "Bloqueado" },
+                    ] as const
+                  ).map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={status === s.id}
+                      onClick={() => setStatus(s.id)}
+                      className={cn(
+                        "rounded-full px-4 py-1.5 text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                        status === s.id
+                          ? s.id === "BLOCKED"
+                            ? "bg-destructive text-white"
+                            : "bg-primary text-primary-foreground"
+                          : "bg-secondary text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Cliente bloqueado não consegue comprar no fiado.
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="flex flex-col gap-2">
+            <Button
+              type="submit"
+              loading={submitting}
+              className="h-11 rounded-xl text-base font-semibold"
+            >
               {submitting ? "Salvando..." : isEdit ? "Salvar alterações" : "Cadastrar cliente"}
             </Button>
-            <Button type="button" variant="outline" onClick={() => router.push("/fiado")}>
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-10 rounded-xl"
+              onClick={() => router.push(isEdit ? `/fiado/clientes/${customer.id}` : "/fiado")}
+            >
               Cancelar
             </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+          </CardContent>
+        </Card>
+      </div>
+    </form>
   )
 }

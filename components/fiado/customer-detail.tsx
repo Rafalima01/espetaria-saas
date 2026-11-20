@@ -2,9 +2,11 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { HandCoins, Pencil, Wallet, CreditCard, CheckCircle2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+import { PageHeader } from "@/components/layout/page-header"
+import { SummaryCard } from "@/components/dashboard/summary-card"
+import { StatusPill } from "@/components/ui/status-pill"
 import { AlertsBanner } from "@/components/fiado/alerts-banner"
 import { StatementTable } from "@/components/financeiro/statement-table"
 import { ReceivePaymentDialog } from "@/components/fiado/receive-payment-dialog"
@@ -37,65 +39,60 @@ export function CustomerDetail({
   const openEntries = entries.filter((e) => e.status === "OPEN" || e.status === "PARTIALLY_PAID")
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">{customer.name}</h1>
-          <p className="text-muted-foreground">{customer.phone}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Badge variant={customer.status === "BLOCKED" ? "destructive" : "default"}>
-            {customer.status === "BLOCKED" ? "Bloqueado" : "Ativo"}
-          </Badge>
-          <Button
-            variant="outline"
-            render={<Link href={`/fiado/clientes/${customer.id}/editar`} />}
-            nativeButton={false}
-          >
-            Editar
-          </Button>
-          <Button disabled={openEntries.length === 0} onClick={() => setPayOpen(true)}>
-            Registrar recebimento
-          </Button>
-        </div>
-      </div>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        title={customer.name}
+        description={customer.phone}
+        backHref="/fiado"
+        actions={
+          <>
+            {customer.status === "BLOCKED" ? (
+              <StatusPill tone="danger">Bloqueado</StatusPill>
+            ) : (
+              <StatusPill tone="success">Ativo</StatusPill>
+            )}
+            <Button
+              variant="outline"
+              className="h-10 rounded-xl px-4"
+              render={<Link href={`/fiado/clientes/${customer.id}/editar`} />}
+              nativeButton={false}
+            >
+              <Pencil className="size-4" />
+              Editar
+            </Button>
+            <Button
+              className="h-10 rounded-xl px-4"
+              disabled={openEntries.length === 0}
+              onClick={() => setPayOpen(true)}
+            >
+              <HandCoins className="size-4" />
+              Registrar recebimento
+            </Button>
+          </>
+        }
+      />
 
       <AlertsBanner alerts={alerts} />
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Saldo devedor
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-xl font-semibold">
-            {centsToBRL(balance.balance)}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Limite de crédito
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-xl font-semibold">
-            {centsToBRL(customer.creditLimit)}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total pago
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-xl font-semibold">
-            {centsToBRL(balance.totalPaid)}
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <SummaryCard
+          highlight={balance.balance > 0}
+          title="Saldo devedor"
+          value={centsToBRL(balance.balance)}
+          icon={Wallet}
+        />
+        <SummaryCard
+          title="Limite de crédito"
+          value={centsToBRL(customer.creditLimit)}
+          icon={CreditCard}
+        />
+        <SummaryCard title="Total pago" value={centsToBRL(balance.totalPaid)} icon={CheckCircle2} />
       </div>
 
-      <StatementTable entries={entries} />
+      <div className="flex flex-col gap-3">
+        <h2 className="text-lg font-semibold tracking-tight">Extrato</h2>
+        <StatementTable entries={entries} />
+      </div>
 
       <ReceivePaymentDialog open={payOpen} onOpenChange={setPayOpen} entries={openEntries} />
     </div>

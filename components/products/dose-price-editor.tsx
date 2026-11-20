@@ -4,9 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { brlToCents } from "@/lib/money"
 import type { DoseSize } from "@/lib/generated/prisma/client"
 
@@ -59,7 +57,7 @@ export function DosePriceEditor({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Preços por tamanho de dose</CardTitle>
+          <CardTitle className="text-base">Preços por tamanho de dose</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground">
           Nenhum tamanho de dose cadastrado ainda.
@@ -71,28 +69,37 @@ export function DosePriceEditor({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Preços por tamanho de dose</CardTitle>
+        <CardTitle className="text-base">Preços por tamanho de dose</CardTitle>
+        <CardDescription>Deixe em branco os tamanhos que você não quer oferecer</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {doseSizes.map((ds) => {
               const existing = priceByDoseSize.get(ds.id)
               return (
-                <div key={ds.id} className="flex flex-col gap-2">
-                  <Label htmlFor={`price-${ds.id}`}>{ds.volumeMl}ml</Label>
-                  <Input
-                    id={`price-${ds.id}`}
-                    name={`price-${ds.id}`}
-                    inputMode="decimal"
-                    placeholder="0,00 (deixe vazio p/ não oferecer)"
-                    defaultValue={existing ? (existing / 100).toFixed(2).replace(".", ",") : ""}
-                  />
-                </div>
+                <label
+                  key={ds.id}
+                  htmlFor={`price-${ds.id}`}
+                  className="flex flex-col gap-2 rounded-2xl bg-secondary/60 p-3 ring-1 ring-foreground/10 transition-shadow focus-within:ring-primary/60"
+                >
+                  <span className="text-sm font-medium tabular-nums">{ds.volumeMl}ml</span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="text-sm text-muted-foreground">R$</span>
+                    <input
+                      id={`price-${ds.id}`}
+                      name={`price-${ds.id}`}
+                      inputMode="decimal"
+                      placeholder="não oferecer"
+                      className="w-full bg-transparent text-lg font-semibold text-primary tabular-nums outline-none placeholder:text-sm placeholder:font-normal placeholder:text-muted-foreground"
+                      defaultValue={existing ? (existing / 100).toFixed(2).replace(".", ",") : ""}
+                    />
+                  </span>
+                </label>
               )
             })}
           </div>
-          <Button type="submit" disabled={submitting} className="w-fit">
+          <Button type="submit" loading={submitting} className="h-10 w-fit rounded-xl px-5">
             {submitting ? "Salvando..." : "Salvar preços"}
           </Button>
         </form>

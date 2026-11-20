@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation"
 import { prisma } from "@/lib/prisma"
+import { PageHeader } from "@/components/layout/page-header"
 import { RecipeForm } from "@/components/recipes/recipe-form"
 
 export default async function EditarReceitaPage({
@@ -15,8 +16,8 @@ export default async function EditarReceitaPage({
   if (!recipe) notFound()
 
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-semibold">Editar receita</h1>
+    <div className="flex flex-col gap-6">
+      <PageHeader title={recipe.name} description="Editar receita" backHref="/receitas" />
       <RecipeForm recipe={recipe} products={products} />
     </div>
   )

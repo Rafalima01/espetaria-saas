@@ -12,9 +12,14 @@ export function AlertsBanner({ alerts }: { alerts: CustomerAlerts }) {
   if (messages.length === 0) return null
 
   return (
-    <div className="flex items-start gap-2 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-      <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-      <ul className="flex flex-col gap-1">
+    <div
+      role="alert"
+      className="flex items-start gap-3 rounded-2xl bg-destructive/10 p-4 text-sm text-destructive ring-1 ring-destructive/30"
+    >
+      <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-destructive/15">
+        <AlertTriangle className="size-4" />
+      </span>
+      <ul className="flex flex-col gap-1 self-center">
         {messages.map((m) => (
           <li key={m}>{m}</li>
         ))}

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma"
+import { PageHeader } from "@/components/layout/page-header"
 import { StockMovementTable } from "@/components/stock/stock-movement-table"
 
 export default async function MovimentacoesPage() {
@@ -9,8 +10,12 @@ export default async function MovimentacoesPage() {
   })
 
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-semibold">Movimentações de estoque</h1>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        title="Movimentações de estoque"
+        description="As 200 movimentações mais recentes, de todos os produtos"
+        backHref="/estoque"
+      />
       <StockMovementTable movements={movements} />
     </div>
   )

@@ -2,14 +2,19 @@
 
 import { useActionState } from "react"
 import Link from "next/link"
+import { CheckCircle2, Lock } from "lucide-react"
 import {
   resetPasswordAction,
   type ResetPasswordState,
 } from "@/app/(auth)/reset-password/[token]/actions"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardFooter } from "@/components/ui/card"
+import {
+  AUTH_BUTTON,
+  AuthBack,
+  AuthError,
+  AuthField,
+  AuthHeading,
+} from "@/components/auth/auth-heading"
 
 export function ResetPasswordForm({ token }: { token: string }) {
   const [state, formAction, isPending] = useActionState<
@@ -19,53 +24,55 @@ export function ResetPasswordForm({ token }: { token: string }) {
 
   if (state?.success) {
     return (
-      <Card>
-        <CardContent className="flex flex-col gap-3 pt-6 text-center">
-          <p className="text-sm">Senha redefinida com sucesso.</p>
-          <Link href="/login" className="text-sm font-medium text-primary underline">
-            Ir para o login
-          </Link>
-        </CardContent>
-      </Card>
+      <div className="flex flex-col items-start gap-6">
+        <span className="animate-check-pop flex size-14 items-center justify-center rounded-full bg-success/15 text-success">
+          <CheckCircle2 className="size-7" />
+        </span>
+        <AuthHeading title="Senha redefinida" description="Agora você já pode entrar com a nova senha." />
+        <Button
+          size="lg"
+          className={AUTH_BUTTON}
+          render={<Link href="/login" />}
+          nativeButton={false}
+        >
+          Ir para o login
+        </Button>
+      </div>
     )
   }
 
   return (
-    <Card>
-      <form action={formAction}>
-        <CardContent className="flex flex-col gap-4 pt-6">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="password">Nova senha</Label>
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              required
-              minLength={8}
-              autoComplete="new-password"
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="confirmPassword">Confirmar senha</Label>
-            <Input
-              id="confirmPassword"
-              name="confirmPassword"
-              type="password"
-              required
-              minLength={8}
-              autoComplete="new-password"
-            />
-          </div>
-          {state?.error && (
-            <p className="text-sm text-destructive">{state.error}</p>
-          )}
-        </CardContent>
-        <CardFooter>
-          <Button type="submit" className="w-full" disabled={isPending}>
-            {isPending ? "Salvando..." : "Redefinir senha"}
-          </Button>
-        </CardFooter>
+    <div className="flex flex-col gap-8">
+      <AuthBack />
+      <AuthHeading title="Nova senha" description="Escolha uma senha com pelo menos 8 caracteres." />
+      <form action={formAction} className="flex flex-col gap-4">
+        <AuthField
+          id="password"
+          name="password"
+          type="password"
+          label="Nova senha"
+          icon={Lock}
+          placeholder="Nova senha"
+          required
+          minLength={8}
+          autoComplete="new-password"
+        />
+        <AuthField
+          id="confirmPassword"
+          name="confirmPassword"
+          type="password"
+          label="Confirmar senha"
+          icon={Lock}
+          placeholder="Confirmar senha"
+          required
+          minLength={8}
+          autoComplete="new-password"
+        />
+        {state?.error && <AuthError>{state.error}</AuthError>}
+        <Button type="submit" size="lg" className={AUTH_BUTTON} loading={isPending}>
+          {isPending ? "Salvando..." : "Redefinir senha"}
+        </Button>
       </form>
-    </Card>
+    </div>
   )
 }

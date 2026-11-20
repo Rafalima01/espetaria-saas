@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
-import { forbiddenResponse } from "@/lib/auth-guards"
+import { forbiddenResponse, denyUnlessRole } from "@/lib/auth-guards"
 
 type Params = { params: Promise<{ id: string }> }
 
 export async function GET(_req: NextRequest, { params }: Params) {
   const session = await auth()
-  if (!session?.user) return forbiddenResponse("Não autenticado")
+  const denied = denyUnlessRole(session, ["ADMIN","MANAGER","CASHIER"])
+  if (denied) return denied
 
   const { id } = await params
   const sale = await prisma.sale.findUnique({

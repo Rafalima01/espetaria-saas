@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
+import { PageHeader } from "@/components/layout/page-header"
 import { UserEditForm } from "@/components/users/user-edit-form"
 
 export default async function EditarUsuarioPage({
@@ -19,8 +20,12 @@ export default async function EditarUsuarioPage({
   if (!user) notFound()
 
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-semibold">Editar usuário</h1>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        title={user.name}
+        description="Editar usuário"
+        backHref="/configuracoes/usuarios"
+      />
       <UserEditForm user={user} isSelf={session?.user?.id === user.id} />
     </div>
   )
